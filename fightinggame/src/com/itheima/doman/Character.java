@@ -1,55 +1,69 @@
 package com.itheima.doman;
 
 public class Character {
-    public String name;
-    public int HP;
-    public int maxHP;
-    public int attack;
-    public int defense;
+    private final String name;
+    private int hp;
+    private int maxHP;
+    private int attack;
+    private int defense;
+    private boolean defending;
 
-    public Character() {
-
-    }
-
-    //刚创建人物的时候，血量是满的
-    public Character(String name, int HP, int attack, int defense) {
+    public Character(String name, int hp, int attack, int defense) {
+        if (name == null || name.isBlank() || hp <= 0 || attack < 0 || defense < 0) {
+            throw new IllegalArgumentException("Invalid character attributes");
+        }
         this.name = name;
-        this.HP = HP;
-        this.maxHP = HP;
+        this.hp = hp;
+        this.maxHP = hp;
         this.attack = attack;
         this.defense = defense;
     }
 
-    //1.判断当前人物是否还活着
-    public boolean isAlive() {
-        return HP > 0;
+    public String getName() { return name; }
+    public int getHP() { return hp; }
+    public int getMaxHP() { return maxHP; }
+    public int getAttack() { return attack; }
+    public int getDefense() { return defense; }
+    public boolean isAlive() { return hp > 0; }
+    public boolean isDefending() { return defending; }
+    public void defend() { defending = true; }
+    public void clearDefense() { defending = false; }
+
+    public int heal(int amount) {
+        if (amount < 0) throw new IllegalArgumentException("Negative healing");
+        if (!isAlive()) return 0;
+        int actual = Math.min(amount, maxHP - hp);
+        hp += actual;
+        return actual;
     }
 
-    //2，恢复血量
-    //amount：具体回多少血
-    //作用：回复血量
-    //形参：具体回多少血
-    public void heal(int amount) {
-        HP += amount;
-        if (HP > maxHP) {
-            HP = maxHP;
+    public int takeDamage(int damage) {
+        if (damage < 0) throw new IllegalArgumentException("Negative damage");
+        if (damage == 0 || !isAlive()) return 0;
+        if (defending) {
+            damage = Math.max(1, damage / 2);
+            defending = false;
         }
+        int actual = Math.min(hp, damage);
+        hp -= actual;
+        return actual;
     }
 
-    //3.受到伤害
-    //damage：具体受多少伤
-    //作用：受到了N点伤害之后，还有多少点血
-    //形参：具体收到了多少伤害
-    public void takeDamage(int damage) {
-        HP -= damage;
-        if (HP < 0) {
-            HP = 0;
-        }
+    public boolean spendHealth(int amount) {
+        if (amount < 0) throw new IllegalArgumentException("Negative health cost");
+        if (hp <= amount) return false;
+        hp -= amount;
+        return true;
     }
 
-    //4.展示人物的属性
+    protected void grow(int health, int power, int armor) {
+        maxHP += health;
+        if (isAlive()) hp += health;
+        attack += power;
+        defense += armor;
+    }
+
     public String show() {
-        return (name + "[当前血量：" + HP + "\t攻击：" + attack + "\t防御：" + defense + "]");
+        return name + " [HP: " + hp + "/" + maxHP + ", ATK: " + attack + ", DEF: " + defense + "]";
     }
-
 }

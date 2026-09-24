@@ -1,0 +1,6 @@
+.tools/
+build/
+data/
+*.class
+.idea/
+*.log

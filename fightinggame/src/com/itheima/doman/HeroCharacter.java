@@ -1,33 +1,36 @@
 package com.itheima.doman;
 
-import java.util.ArrayList;
-
-//我方游戏人物的角色
 public class HeroCharacter extends Character {
-    public ArrayList<String> skillList;
+    private int level = 1;
+    private int potions = 3;
 
-    public HeroCharacter() {
-        super();
-        skillList = new ArrayList<>();
+    public HeroCharacter(String name, int hp, int attack, int defense) {
+        super(name, hp, attack, defense);
     }
 
-    public HeroCharacter(String name, int HP,  int attack, int defense) {
-        super(name, HP, attack, defense);
-        skillList = new ArrayList<>();
+    public static HeroCharacter create(String name, int health, int power, int armor) {
+        if (health < 0 || power < 0 || armor < 0 || (long) health + power + armor != 20) {
+            throw new IllegalArgumentException("Exactly 20 attribute points are required");
+        }
+        return new HeroCharacter(name, 100 + health * 10, 10 + power * 2, armor);
     }
 
-    //行为：用来遍历技能列表
+    public int getLevel() { return level; }
+    public int getPotions() { return potions; }
+
+    public void levelUp() {
+        level++;
+        grow(30, 5, 3);
+        potions = Math.min(3, potions + 1);
+    }
+
+    public int usePotion() {
+        if (potions == 0 || !isAlive() || getHP() == getMaxHP()) return 0;
+        potions--;
+        return heal(50);
+    }
+
     public String showSkill() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < skillList.size(); i++) {
-            //添加数据
-                sb.append(skillList.get(i));
-                //如果不是最后一个元素，在添加逗号空格
-                if (i != skillList.size() - 1) {
-                    sb.append(", ");
-                }
-            }
-
-        return sb.toString();
+        return "普通攻击、强力一击、生命汲取、防御、治疗药水";
     }
 }
