@@ -35,11 +35,14 @@ final class GameTheme {
             @Override public ColorUIResource getSystemTextColor() { return new ColorUIResource(TEXT); }
             @Override public ColorUIResource getUserTextColor() { return new ColorUIResource(TEXT); }
             @Override public ColorUIResource getWindowBackground() { return new ColorUIResource(BACKGROUND); }
+            @Override public ColorUIResource getControlHighlight() { return new ColorUIResource(BORDER); }
+            @Override public ColorUIResource getControlDarkShadow() { return new ColorUIResource(BORDER); }
+            @Override public ColorUIResource getControlInfo() { return new ColorUIResource(TEXT); }
         });
         try { UIManager.setLookAndFeel(new MetalLookAndFeel()); }
         catch (javax.swing.UnsupportedLookAndFeelException exception) { throw new IllegalStateException(exception); }
         Font font = font(Font.PLAIN, 13);
-        for (String component : new String[]{"Label", "Button", "ToggleButton", "TextField", "PasswordField", "ComboBox", "Spinner", "Table", "TableHeader", "List", "ToolTip", "OptionPane"}) {
+        for (String component : new String[]{"Label", "Button", "ToggleButton", "TextField", "FormattedTextField", "PasswordField", "ComboBox", "Spinner", "Table", "TableHeader", "List", "ToolTip", "OptionPane"}) {
             UIManager.put(component + ".font", font);
             UIManager.put(component + ".background", SURFACE);
             UIManager.put(component + ".foreground", TEXT);
@@ -58,10 +61,16 @@ final class GameTheme {
         UIManager.put("ComboBox.disabledForeground", MUTED);
         UIManager.put("TextField.inactiveForeground", MUTED);
         UIManager.put("TextField.inactiveBackground", BACKGROUND);
+        UIManager.put("FormattedTextField.inactiveForeground", MUTED);
+        UIManager.put("FormattedTextField.inactiveBackground", BACKGROUND);
         UIManager.put("TextField.caretForeground", GREEN);
         UIManager.put("PasswordField.caretForeground", GREEN);
         UIManager.put("TextField.selectionBackground", new Color(47, 89, 77));
         UIManager.put("PasswordField.selectionBackground", new Color(47, 89, 77));
+        javax.swing.border.Border fieldBorder = BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(5, 8, 5, 8));
+        UIManager.put("TextField.border", fieldBorder);
+        UIManager.put("PasswordField.border", fieldBorder);
+        UIManager.put("FormattedTextField.border", fieldBorder);
         UIManager.put("Table.selectionBackground", new Color(47, 89, 77));
         UIManager.put("Table.selectionForeground", TEXT);
         UIManager.put("Table.gridColor", BORDER);

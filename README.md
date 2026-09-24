@@ -2,6 +2,10 @@
 
 基于原始 Java 文字格斗 demo 完善的 Swing 桌面回合制游戏。保留控制台入口，桌面版与控制台版共用战斗引擎和局内成长逻辑。
 
+![铁境竞技场桌面版](docs/images/arena.png)
+
+桌面界面包含关卡进度、分类技能按钮、平滑血条、攻击动作、生命变化提示和分色战斗日志。战士、刺客、坦克、法师及守关者拥有不同装备外观；登录、属性分配和可排序战绩表使用统一的深色主题。
+
 ## 启动
 
 Windows 下双击根目录 `start.bat`，或者运行：
@@ -75,6 +79,9 @@ fightinggame/src/com/itheima/
   storage/                  密码摘要、本地账号和战绩存储
   ui/GameFrame.java         Swing 桌面界面与账号对话框
   ui/ArenaPanel.java        原创像素角色、竞技场、血条与待机动画
+  ui/GameTheme.java         主窗口与弹窗的统一主题
+  ui/GameButton.java        技能说明、悬停和键盘焦点状态
+  ui/ChallengeTrack.java    十关与无尽模式的进度显示
   ui/ConsoleInput.java      可重试输入与 EOF 处理
   ui/Login.java             控制台账号菜单
   ui/FightingGame.java      控制台游戏流程

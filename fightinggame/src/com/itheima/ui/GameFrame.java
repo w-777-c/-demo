@@ -202,6 +202,8 @@ public final class GameFrame extends JFrame {
             return;
         }
         JPanel form = new JPanel(new GridLayout(0, 2, 12, 12));
+        form.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        form.setPreferredSize(new Dimension(440, 228));
         JComboBox<String> mode = new JComboBox<>(new String[]{"十关挑战", "无尽试炼"});
         JComboBox<String> build = new JComboBox<>(new String[]{"均衡 (8 / 10 / 2)", "猛攻 (4 / 16 / 0)", "自定义"});
         JSpinner health = new JSpinner(new SpinnerNumberModel(8, 0, 20, 1));
@@ -444,8 +446,9 @@ public final class GameFrame extends JFrame {
     }
 
     private void append(String message) {
-        Color color = message.contains("恢复") || message.contains("击败") || message.contains("升级") || message.contains("通关") ? GREEN
-                : message.contains("[第") ? GameTheme.GOLD : message.contains("消耗") || message.contains("被击败") ? RED : TEXT;
+        Color color = message.contains("被击败") || message.contains("消耗") || session != null && message.startsWith(session.getEnemy().getName()) ? RED
+                : message.contains("恢复") || message.contains("击败") || message.contains("升级") || message.contains("通关") ? GREEN
+                : message.contains("[第") ? GameTheme.GOLD : TEXT;
         append(message, color);
     }
 

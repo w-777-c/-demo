@@ -2,6 +2,7 @@ package com.itheima;
 
 import com.itheima.storage.UserStore;
 import com.itheima.ui.GameFrame;
+import com.itheima.ui.ArenaPanel;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Point;
@@ -18,11 +19,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -49,7 +50,10 @@ public final class GuiSmokeTest {
             SwingUtilities.invokeLater(() -> button(frame, "登录 / 注册").doClick());
             JDialog account = waitDialog("账号");
             edt(() -> {
-                descendants(account, JComboBox.class).get(0).setSelectedIndex(1);
+                descendants(account, JToggleButton.class).get(1).doClick();
+            });
+            screenshot("account", account);
+            edt(() -> {
                 credentials(account, "Tester1", "abc123");
                 button(account, "注册并登录").doClick();
             });
@@ -57,6 +61,7 @@ public final class GuiSmokeTest {
             check(new UserStore(file).find("Tester1") != null, "registration persisted");
             SwingUtilities.invokeLater(() -> button(frame, "开始挑战").doClick());
             JDialog creation = waitDialog("创建挑战者");
+            screenshot("creation", creation);
             edt(() -> button(creation, "OK", "确定").doClick());
             await(() -> !creation.isShowing(), "character created");
             robot.waitForIdle();
@@ -74,6 +79,17 @@ public final class GuiSmokeTest {
             robot.mouseMove(target.get().x, target.get().y);
             robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
             robot.waitForIdle();
+            BufferedImage firstFrame = captureArena();
+            Thread.sleep(120);
+            BufferedImage nextFrame = captureArena();
+            int changed = 0;
+            for (int y = 0; y < firstFrame.getHeight(); y++) {
+                for (int x = 0; x < firstFrame.getWidth(); x++) {
+                    if (firstFrame.getRGB(x, y) != nextFrame.getRGB(x, y)) changed++;
+                }
+            }
+            check(changed > 200, "attack and health bar animate between frames");
+            screenshot("impact");
             edt(() -> button(frame, "生命汲取").doClick());
             edt(() -> check(!button(frame, "汲取 (2)").isEnabled(), "drain cooldown reflected in UI"));
             for (int i = 0; i < 30; i++) {
@@ -83,6 +99,7 @@ public final class GuiSmokeTest {
                 edt(() -> button(frame, "普通攻击").doClick());
             }
             edt(() -> check(button(frame, "下一场战斗").isEnabled(), "first battle victory"));
+            screenshot("victory");
             edt(() -> { button(frame, "下一场战斗").doClick(); frame.setSize(1000, 760); });
             robot.waitForIdle();
             screenshot("compact");
@@ -92,10 +109,15 @@ public final class GuiSmokeTest {
                         int required = button.getFontMetrics(button.getFont()).stringWidth(button.getText())
                                 + button.getInsets().left + button.getInsets().right;
                         check(required <= button.getWidth(), "button text fits: " + button.getText());
+                        String detail = button.getAccessibleContext().getAccessibleDescription();
+                        if (detail != null && !detail.equals(button.getToolTipText())) {
+                            int detailWidth = button.getFontMetrics(new java.awt.Font("Microsoft YaHei", java.awt.Font.PLAIN, 11)).stringWidth(detail) + 28;
+                            check(detailWidth <= button.getWidth(), "skill detail fits: " + detail);
+                        }
                     }
                 }
                 for (JLabel label : descendants(frame, JLabel.class)) {
-                    if (label.isShowing() && label.getText() != null && label.getText().startsWith("<html>")) {
+                    if (label.isShowing() && label.getText() != null && !label.getText().isEmpty()) {
                         check(label.getPreferredSize().height <= label.getHeight(), "sidebar text fits vertically");
                         check(label.getPreferredSize().width <= label.getWidth(), "sidebar text fits horizontally");
                     }
@@ -114,6 +136,7 @@ public final class GuiSmokeTest {
             await(() -> !relogin.isShowing(), "saved account login");
             SwingUtilities.invokeLater(() -> button(frame, "战绩榜").doClick());
             JDialog leaderboard = waitDialog("本地战绩榜");
+            screenshot("leaderboard", leaderboard);
             edt(() -> button(leaderboard, "OK", "确定").doClick());
             System.out.println("PASS GUI: " + checks + " assertions; screenshots in build/screenshots");
         } finally {
@@ -167,19 +190,36 @@ public final class GuiSmokeTest {
     }
 
     private static void screenshot(String name) throws Exception {
+        screenshot(name, frame);
+    }
+
+    private static void screenshot(String name, Window window) throws Exception {
         robot.waitForIdle();
+        AtomicReference<Point> pointer = new AtomicReference<>();
+        edt(() -> { Point point = window.getLocationOnScreen(); point.translate(window.getWidth() / 2, 34); pointer.set(point); });
+        robot.mouseMove(pointer.get().x, pointer.get().y);
         Thread.sleep(200);
         AtomicReference<BufferedImage> image = new AtomicReference<>();
         edt(() -> {
-            BufferedImage rendered = new BufferedImage(frame.getWidth(), frame.getHeight(), BufferedImage.TYPE_INT_RGB);
-            java.awt.Graphics2D graphics = rendered.createGraphics(); frame.paintAll(graphics); graphics.dispose(); image.set(rendered);
+            BufferedImage rendered = new BufferedImage(window.getWidth(), window.getHeight(), BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D graphics = rendered.createGraphics(); window.paintAll(graphics); graphics.dispose(); image.set(rendered);
         });
         ImageIO.write(image.get(), "png", Path.of("build", "screenshots", name + ".png").toFile());
         java.util.Set<Integer> colors = new java.util.HashSet<>();
         for (int y = 100; y < image.get().getHeight() - 100; y += 5) {
             for (int x = 20; x < image.get().getWidth() - 20; x += 5) colors.add(image.get().getRGB(x, y));
         }
-        check(colors.size() > 30, "nonblank rendered window " + name);
+        check(colors.size() > (window == frame ? 30 : 5), "nonblank rendered window " + name);
+    }
+
+    private static BufferedImage captureArena() throws Exception {
+        AtomicReference<BufferedImage> image = new AtomicReference<>();
+        edt(() -> {
+            ArenaPanel arena = descendants(frame, ArenaPanel.class).get(0);
+            BufferedImage rendered = new BufferedImage(arena.getWidth(), arena.getHeight(), BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D graphics = rendered.createGraphics(); arena.paintAll(graphics); graphics.dispose(); image.set(rendered);
+        });
+        return image.get();
     }
 
     private static void edt(Runnable action) throws Exception { SwingUtilities.invokeAndWait(action); }
