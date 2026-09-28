@@ -56,6 +56,7 @@ public final class GameFrame extends JFrame {
     private final ArenaPanel arena = new ArenaPanel();
     private final JTextPane log = new JTextPane();
     private final ChallengeTrack track = new ChallengeTrack();
+    private final CharacterPreview portrait = new CharacterPreview(true);
     private final JLabel account = label("游客", 13, MUTED);
     private final JLabel stage = label("竞技场 / 待出战", 14, TEXT);
     private final JLabel level = label("Lv. 01", 24, TEXT);
@@ -79,30 +80,35 @@ public final class GameFrame extends JFrame {
     private boolean dirty;
 
     public GameFrame(UserStore store, Random random) {
-        super("铁境竞技场 | IRON ARENA");
+        super("铁境竞技场 · 绯幕剧场 | IRON ARENA");
         this.store = store;
         this.random = random;
         GameTheme.install();
+        GameAudio.start();
+        setIconImage(UiAssets.image("crown"));
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 760));
         setSize(1220, 860);
         setLocationRelativeTo(null);
         JPanel root = panel(new BorderLayout(0, 0), BACKGROUND);
-        root.setBorder(BorderFactory.createEmptyBorder(20, 26, 16, 26));
+        root.setBorder(BorderFactory.createEmptyBorder(16, 22, 14, 22));
         setContentPane(root);
 
         JPanel header = panel(new BorderLayout(), BACKGROUND);
         JPanel brand = panel(new GridLayout(2, 1, 0, 3), BACKGROUND);
-        brand.add(label("铁境竞技场", 25, TEXT));
-        brand.add(label("IRON ARENA   /   THE FORGE", 10, GREEN));
+        JLabel title = label("铁境竞技场", 32, GameTheme.GOLD); title.setFont(GameTheme.display(32)); brand.add(title);
+        brand.add(label("绯幕剧场   /   CRIMSON THEATRE", 11, GREEN));
         header.add(brand, BorderLayout.WEST);
         JPanel profile = panel(new FlowLayout(FlowLayout.RIGHT, 12, 5), BACKGROUND);
-        JButton leaderboard = button("战绩榜", SURFACE);
+        GameButton leaderboard = button("战绩榜", SURFACE); leaderboard.setGlyph("trophy");
         leaderboard.addActionListener(event -> showLeaderboard());
         login.addActionListener(event -> accountAction());
-        JButton online = button("联机对战", GREEN);
-        online.addActionListener(event -> new OnlineDialog(this, user == null ? "挑战者" : user.getUsername()).setVisible(true));
+        GameButton online = button("联机对战", GREEN); online.setGlyph("users");
+        online.addActionListener(event -> { new OnlineDialog(this, user == null ? "挑战者" : user.getUsername()).setVisible(true); refresh(); });
+        GameButton settings = button("", SURFACE); settings.setGlyph("settings-2"); settings.setToolTipText("音画设置");
+        settings.getAccessibleContext().setAccessibleName("音画设置"); settings.addActionListener(event -> new SettingsDialog(this).setVisible(true));
         profile.add(online); profile.add(account); profile.add(leaderboard); profile.add(login);
+        profile.add(settings);
         header.add(profile, BorderLayout.EAST);
         header.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GameTheme.BORDER),
                 BorderFactory.createEmptyBorder(0, 0, 16, 0)));
@@ -121,48 +127,54 @@ public final class GameFrame extends JFrame {
         play.add(stageHeader, BorderLayout.NORTH);
         play.add(arena, BorderLayout.CENTER);
         JPanel controls = panel(new GridLayout(1, 5, 8, 0), BACKGROUND);
-        controls.setPreferredSize(new Dimension(700, 76));
+        controls.setPreferredSize(new Dimension(700, 90));
         String[] names = {"普通攻击", "强力一击", "生命汲取", "防御", "治疗药水"};
+        String[] glyphs = {"sword", "swords", "heart-pulse", "shield", "flask-conical"};
         String[] tips = {"造成攻击力减防御力的伤害，最低1点。", "消耗10 HP，造成180%攻击力伤害。", "120%攻击力；回复实际伤害的50% (最低1点)；间隔2个有效回合。", "下次命中伤害减半，多段攻击仅抵挡第一段。", "恢复最多50 HP；每次出战消耗一瓶。"};
         for (int i = 0; i < actions.length; i++) {
             final Battle.Action action = Battle.Action.values()[i];
             actions[i] = button(names[i], SURFACE);
+            actions[i].setGlyph(glyphs[i]);
             actions[i].setToolTipText(tips[i]);
             actions[i].addActionListener(event -> takeTurn(action));
             controls.add(actions[i]);
         }
         play.add(controls, BorderLayout.SOUTH);
         body.add(play, BorderLayout.CENTER);
-        body.add(sidebar(), BorderLayout.EAST);
+        body.add(sidebar(), BorderLayout.WEST);
         root.add(body, BorderLayout.CENTER);
 
         JPanel bottom = panel(new BorderLayout(0, 8), BACKGROUND);
-        bottom.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+        bottom.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
         JPanel logTitle = panel(new BorderLayout(), BACKGROUND);
         logTitle.add(label("战斗记录", 14, TEXT), BorderLayout.WEST);
         logTitle.add(status, BorderLayout.EAST);
         bottom.add(logTitle, BorderLayout.NORTH);
         log.setEditable(false);
-        log.setFont(new Font("Microsoft YaHei", Font.PLAIN, 13));
+        log.setFont(GameTheme.font(Font.PLAIN, 13));
         log.setBackground(SURFACE); log.setForeground(TEXT); log.setCaretColor(GREEN);
         log.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
         JScrollPane scroll = new JScrollPane(log);
         scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.setPreferredSize(new Dimension(800, 140));
+        scroll.setPreferredSize(new Dimension(800, 96));
         bottom.add(scroll, BorderLayout.CENTER);
         root.add(bottom, BorderLayout.SOUTH);
         primary.addActionListener(event -> advance());
+        ((GameButton) primary).setGlyph("chevron-right"); ultimate.setGlyph("sparkles");
         retire.addActionListener(event -> retire());
         ultimate.addActionListener(event -> {
             if (session == null || session.getState() != GameSession.State.FIGHTING) return;
             int hp = session.getHero().getHP(), enemyHP = session.getEnemy().getHP();
             session.ultimate().forEach(this::append);
+            GameAudio.effect("magic");
             arena.animateTurn(Battle.Action.POWER_STRIKE, hp, enemyHP);
             if (session.getState() == GameSession.State.FINISHED) finish();
             refresh();
         });
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent event) { closeGame(); }
+            @Override public void windowIconified(WindowEvent event) { GameAudio.pause(true); }
+            @Override public void windowDeiconified(WindowEvent event) { GameAudio.pause(false); }
         });
         append("竞技场已开放。等待挑战者入场。", MUTED);
         refresh();
@@ -170,22 +182,20 @@ public final class GameFrame extends JFrame {
 
     private JPanel sidebar() {
         JPanel side = panel(new BorderLayout(0, 12), BACKGROUND);
-        side.setPreferredSize(new Dimension(216, 350));
-        side.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, GameTheme.BORDER),
-                BorderFactory.createEmptyBorder(0, 18, 0, 0)));
+        side.setPreferredSize(new Dimension(200, 350));
+        side.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, GameTheme.BORDER),
+                BorderFactory.createEmptyBorder(0, 0, 0, 16)));
         JPanel info = panel(null, BACKGROUND);
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
-        info.add(label("挑战者档案", 12, MUTED));
-        info.add(Box.createVerticalStrut(10));
+        info.add(label("契约者档案", 12, GameTheme.GOLD));
+        info.add(Box.createVerticalStrut(8));
+        portrait.setAlignmentX(0); info.add(portrait);
+        info.add(Box.createVerticalStrut(8));
         info.add(level);
         info.add(Box.createVerticalStrut(8));
         info.add(vocation);
         info.add(Box.createVerticalStrut(10));
-        info.add(statRows(new String[]{"生命", "攻击", "防御", "本局胜场"}, stats, 25));
-        info.add(Box.createVerticalStrut(10));
-        info.add(energy);
-        info.add(Box.createVerticalStrut(5));
-        info.add(loot);
+        info.add(statRows(new String[]{"生命", "攻击", "防御", "本局胜场"}, stats, 23));
         info.add(Box.createVerticalStrut(16));
         info.add(recordTitle);
         info.add(Box.createVerticalStrut(8));
@@ -200,7 +210,10 @@ public final class GameFrame extends JFrame {
         JPanel buttons = panel(new GridLayout(3, 1, 0, 8), BACKGROUND);
         buttons.setPreferredSize(new Dimension(200, 132));
         buttons.add(ultimate); buttons.add(primary); buttons.add(retire);
-        side.add(buttons, BorderLayout.SOUTH);
+        JPanel commands = panel(new BorderLayout(0, 9), BACKGROUND);
+        JPanel charge = panel(new GridLayout(2, 1, 0, 3), BACKGROUND); charge.add(energy); charge.add(loot);
+        commands.add(charge, BorderLayout.NORTH); commands.add(buttons, BorderLayout.CENTER);
+        side.add(commands, BorderLayout.SOUTH);
         return side;
     }
 
@@ -235,6 +248,9 @@ public final class GameFrame extends JFrame {
         JComboBox<String> mode = new JComboBox<>(new String[]{"十关挑战", "无尽试炼"});
         JComboBox<String> build = new JComboBox<>(new String[]{"铁卫 / 生存与防守", "狂刃 / 爆发输出", "灵术师 / 汲取与续航", "自定义 / 铁卫大招"});
         build.setSelectedIndex(2);
+        CharacterPreview preview = new CharacterPreview(false);
+        JPanel creation = panel(new BorderLayout(18, 0), BACKGROUND);
+        creation.add(preview, BorderLayout.WEST); creation.add(form, BorderLayout.CENTER);
         JLabel special = new JLabel(HeroCharacter.Style.MYSTIC.ultimate);
         JSpinner health = new JSpinner(new SpinnerNumberModel(8, 0, 20, 1));
         JSpinner power = new JSpinner(new SpinnerNumberModel(10, 0, 20, 1));
@@ -247,6 +263,7 @@ public final class GameFrame extends JFrame {
             boolean custom = build.getSelectedIndex() == 3;
             health.setEnabled(custom); power.setEnabled(custom);
             HeroCharacter.Style style = HeroCharacter.Style.values()[custom ? 0 : build.getSelectedIndex()];
+            preview.setStyle(style.ordinal());
             special.setText(style.ultimate);
             special.setToolTipText(style.description);
             if (!custom) { health.setValue(style.health); power.setValue(style.power); }
@@ -257,7 +274,7 @@ public final class GameFrame extends JFrame {
         form.add(new JLabel("生命点数 / 每点 +10 HP")); form.add(health);
         form.add(new JLabel("攻击点数 / 每点 +2 ATK")); form.add(power);
         form.add(new JLabel("防御 / 剩余点数")); form.add(armor);
-        while (JOptionPane.showConfirmDialog(this, form, "创建挑战者", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+        while (GameDialogs.showConfirmDialog(this, creation, "创建挑战者", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
             try { health.commitEdit(); power.commitEdit(); }
             catch (java.text.ParseException exception) { message("请输入有效的属性点数。"); continue; }
             int hp = (int) health.getValue();
@@ -278,16 +295,17 @@ public final class GameFrame extends JFrame {
     }
 
     private void chooseReward() {
-        JDialog dialog = new JDialog(this, "战后奖励", true);
+        JDialog dialog = new GameDialog(this, "战后奖励");
         JPanel choices = panel(new GridLayout(3, 1, 0, 12), BACKGROUND);
         choices.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         for (GameSession.Reward reward : session.getRewards()) {
             GameButton option = button(reward.title, SURFACE);
+            option.setGlyph("gem");
             option.setDetail(reward.description, GREEN);
             option.addActionListener(event -> { append(session.chooseReward(reward)); dialog.dispose(); refresh(); });
             choices.add(option);
         }
-        dialog.setContentPane(choices); dialog.setSize(410, 330); dialog.setResizable(false);
+        dialog.setContentPane(choices); dialog.setSize(450, 420); dialog.setResizable(false);
         dialog.setLocationRelativeTo(this); dialog.setVisible(true);
     }
 
@@ -297,6 +315,8 @@ public final class GameFrame extends JFrame {
         int previousEnemyHP = session.getEnemy().getHP();
         append("\n[第 " + session.getBattle().getRound() + " 回合]");
         session.play(action).forEach(this::append);
+        GameAudio.effect(switch (action) { case DEFEND -> "guard"; case POTION -> "heal"; case DRAIN -> "magic"; default -> "attack"; });
+        if (session.getState() == GameSession.State.RESTING) GameAudio.effect("victory");
         arena.animateTurn(action, previousHeroHP, previousEnemyHP);
         if (session.getState() == GameSession.State.FINISHED) finish();
         refresh();
@@ -304,7 +324,7 @@ public final class GameFrame extends JFrame {
 
     private void retire() {
         if (!active()) return;
-        if (JOptionPane.showConfirmDialog(this, "结束本局并保存已获得的胜场？", "撤退结算", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+        if (GameDialogs.showConfirmDialog(this, "结束本局并保存已获得的胜场？", "撤退结算", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         session.retire();
         append("\n本局已结算，共 " + session.getWins() + " 胜。");
         finish(); refresh();
@@ -313,6 +333,7 @@ public final class GameFrame extends JFrame {
     private boolean active() { return session != null && session.getState() != GameSession.State.FINISHED; }
 
     private void finish() {
+        if (!recorded) GameAudio.effect(session.getHero().isAlive() ? "victory" : "defeat");
         if (!recorded && user != null) {
             user.recordGame(session.getWins(), session.isCleared());
             dirty = true;
@@ -334,6 +355,8 @@ public final class GameFrame extends JFrame {
 
     private void refresh() {
         boolean fighting = session != null && session.getState() == GameSession.State.FIGHTING;
+        GameAudio.scene(fighting);
+        portrait.setStyle(session == null ? 2 : session.getHero().getStyle().ordinal());
         ultimate.setEnabled(fighting && session.getBattle().getEnergy() == 100);
         ultimate.setText(session == null ? "职业大招" : session.getHero().getStyle().ultimate);
         ultimate.setToolTipText(session == null ? "" : session.getHero().getStyle().description);
@@ -394,7 +417,7 @@ public final class GameFrame extends JFrame {
             if (!saveRecords()) return;
             user = null; session = null; arena.setSession(null); stage.setText("竞技场 / 待出战"); refresh(); return;
         }
-        JDialog dialog = new JDialog(this, "账号", true);
+        JDialog dialog = new GameDialog(this, "账号");
         JPanel form = new JPanel(new GridLayout(0, 1, 8, 8));
         form.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
         JPanel modes = new JPanel(new GridLayout(1, 2, 0, 0));
@@ -494,12 +517,12 @@ public final class GameFrame extends JFrame {
         JPanel content = panel(new BorderLayout(0, 14), SURFACE);
         content.add(label(model.getRowCount() == 0 ? "暂无战绩" : "挑战者排名 / " + model.getRowCount() + " 位", 16, TEXT), BorderLayout.NORTH);
         content.add(scroll, BorderLayout.CENTER);
-        JOptionPane.showMessageDialog(this, content, "本地战绩榜", JOptionPane.PLAIN_MESSAGE);
+        GameDialogs.showMessageDialog(this, content, "本地战绩榜", JOptionPane.PLAIN_MESSAGE);
     }
 
     private void closeGame() {
         if (active()) {
-            if (JOptionPane.showConfirmDialog(this, "结算当前挑战并退出游戏？", "退出游戏", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+            if (GameDialogs.showConfirmDialog(this, "结算当前挑战并退出游戏？", "退出游戏", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
             session.retire(); finish();
         }
         if (!saveRecords()) { refresh(); return; }
@@ -525,7 +548,9 @@ public final class GameFrame extends JFrame {
         log.setCaretPosition(document.getLength());
     }
 
-    private void message(String message) { JOptionPane.showMessageDialog(this, message, "铁境竞技场", JOptionPane.INFORMATION_MESSAGE); }
+    private void message(String message) { GameDialogs.showMessageDialog(this, message, "铁境竞技场", JOptionPane.INFORMATION_MESSAGE); }
+
+    @Override public void dispose() { super.dispose(); GameAudio.shutdown(); }
 
     private static JPanel panel(java.awt.LayoutManager layout, Color color) {
         JPanel panel = new JPanel(layout); panel.setBackground(color); return panel;

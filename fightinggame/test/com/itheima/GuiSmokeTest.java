@@ -34,6 +34,7 @@ public final class GuiSmokeTest {
 
     public static void main(String[] args) throws Exception {
         Path dir = Files.createTempDirectory("arena-gui-");
+        System.setProperty("fightinggame.dataDir", dir.toString());
         Path file = dir.resolve("accounts.properties");
         Files.createDirectories(Path.of("build", "screenshots"));
         robot = new Robot();
@@ -46,6 +47,23 @@ public final class GuiSmokeTest {
             });
             robot.waitForIdle();
             screenshot("home");
+            SwingUtilities.invokeLater(() -> descendants(frame, JButton.class).stream().filter(b -> "音画设置".equals(b.getAccessibleContext().getAccessibleName())).findFirst().orElseThrow().doClick());
+            JDialog settings = waitDialog("音画设置");
+            screenshot("settings", settings);
+            edt(() -> {
+                List<javax.swing.JSlider> sliders = descendants(settings, javax.swing.JSlider.class);
+                sliders.get(0).setValue(18); sliders.get(1).setValue(35);
+                button(settings, "保存设置").doClick();
+            });
+            await(() -> !settings.isShowing(), "settings saved");
+            check(com.itheima.ui.UiSettings.load(dir.resolve("presentation.properties")).music() == 18, "music preference persisted");
+            SwingUtilities.invokeLater(() -> descendants(frame, JButton.class).stream().filter(b -> "音画设置".equals(b.getAccessibleContext().getAccessibleName())).findFirst().orElseThrow().doClick());
+            JDialog cancelledSettings = waitDialog("音画设置");
+            edt(() -> {
+                descendants(cancelledSettings, javax.swing.JSlider.class).get(0).setValue(0);
+                button(cancelledSettings, "取消").doClick();
+                check(com.itheima.ui.UiSettings.current().music() == 18, "cancel restores volume");
+            });
             edt(() -> check(!button(frame, "普通攻击").isEnabled(), "battle controls disabled before start"));
             SwingUtilities.invokeLater(() -> button(frame, "登录 / 注册").doClick());
             JDialog account = waitDialog("账号");
@@ -109,7 +127,7 @@ public final class GuiSmokeTest {
             SwingUtilities.invokeLater(() -> button(frame, "选择战后奖励").doClick());
             JDialog reward = waitDialog("战后奖励");
             screenshot("rewards", reward);
-            edt(() -> descendants(reward, JButton.class).get(0).doClick());
+            edt(() -> descendants(reward, JButton.class).stream().filter(b -> !b.getText().isEmpty()).findFirst().orElseThrow().doClick());
             await(() -> !reward.isShowing(), "camp reward selected");
             edt(() -> { button(frame, "下一场战斗").doClick(); frame.setSize(1000, 760); });
             robot.waitForIdle();
@@ -122,7 +140,7 @@ public final class GuiSmokeTest {
                         check(required <= button.getWidth(), "button text fits: " + button.getText());
                         String detail = button.getAccessibleContext().getAccessibleDescription();
                         if (detail != null && !detail.equals(button.getToolTipText())) {
-                            int detailWidth = button.getFontMetrics(new java.awt.Font("Microsoft YaHei", java.awt.Font.PLAIN, 11)).stringWidth(detail) + 28;
+                            int detailWidth = button.getFontMetrics(button.getFont().deriveFont(11f)).stringWidth(detail) + 28;
                             check(detailWidth <= button.getWidth(), "skill detail fits: " + detail);
                         }
                     }
@@ -155,7 +173,7 @@ public final class GuiSmokeTest {
             System.out.println("PASS GUI: " + checks + " assertions; screenshots in build/screenshots");
         } finally {
             edt(() -> { for (Window window : Window.getWindows()) window.dispose(); });
-            Files.deleteIfExists(file); Files.deleteIfExists(dir);
+            Files.deleteIfExists(file); Files.deleteIfExists(dir.resolve("presentation.properties")); Files.deleteIfExists(dir);
         }
     }
 

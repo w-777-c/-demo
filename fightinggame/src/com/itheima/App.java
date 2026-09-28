@@ -42,7 +42,7 @@ public class App {
         } catch (Exception exception) {
             String message = "启动失败：" + exception.getMessage();
             System.err.println(message);
-            if (!console) JOptionPane.showMessageDialog(null, message, "铁境竞技场", JOptionPane.ERROR_MESSAGE);
+            if (!console) com.itheima.ui.GameDialogs.showMessageDialog(null, message, "铁境竞技场", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
     }

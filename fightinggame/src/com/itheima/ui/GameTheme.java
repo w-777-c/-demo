@@ -5,25 +5,29 @@ import java.awt.Font;
 import javax.swing.BorderFactory;
 import javax.swing.UIManager;
 import javax.swing.plaf.ColorUIResource;
+import javax.swing.plaf.FontUIResource;
 import javax.swing.plaf.metal.DefaultMetalTheme;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 
 final class GameTheme {
-    static final Color BACKGROUND = new Color(19, 23, 25);
-    static final Color SURFACE = new Color(29, 35, 38);
-    static final Color RAISED = new Color(37, 44, 47);
-    static final Color BORDER = new Color(57, 66, 70);
-    static final Color TEXT = new Color(235, 240, 239);
-    static final Color MUTED = new Color(153, 168, 172);
-    static final Color GREEN = new Color(100, 211, 176);
-    static final Color RED = new Color(238, 130, 125);
-    static final Color GOLD = new Color(225, 191, 121);
-
+    static final Color BACKGROUND = new Color(20, 14, 20);
+    static final Color SURFACE = new Color(35, 24, 31);
+    static final Color RAISED = new Color(49, 33, 40);
+    static final Color BORDER = new Color(94, 72, 65);
+    static final Color TEXT = new Color(237, 225, 203);
+    static final Color MUTED = new Color(174, 160, 153);
+    static final Color GREEN = new Color(103, 190, 171);
+    static final Color RED = new Color(226, 108, 117);
+    static final Color GOLD = new Color(228, 189, 115);
+    static final Color CRIMSON = new Color(156, 43, 59);
+    static final Color ICE = new Color(115, 199, 221);
+    private static boolean installed;
     private GameTheme() {}
-
-    static Font font(int style, int size) { return new Font("Microsoft YaHei", style, size); }
-
+    static Font font(int style, int size) { return UiAssets.body(style, size); }
+    static Font display(int size) { return UiAssets.display(size); }
     static void install() {
+        if (installed) return;
+        installed = true;
         MetalLookAndFeel.setCurrentTheme(new DefaultMetalTheme() {
             @Override protected ColorUIResource getPrimary1() { return new ColorUIResource(BORDER); }
             @Override protected ColorUIResource getPrimary2() { return new ColorUIResource(RAISED); }
@@ -35,51 +39,34 @@ final class GameTheme {
             @Override public ColorUIResource getSystemTextColor() { return new ColorUIResource(TEXT); }
             @Override public ColorUIResource getUserTextColor() { return new ColorUIResource(TEXT); }
             @Override public ColorUIResource getWindowBackground() { return new ColorUIResource(BACKGROUND); }
-            @Override public ColorUIResource getControlHighlight() { return new ColorUIResource(BORDER); }
+            @Override public ColorUIResource getControlHighlight() { return new ColorUIResource(GOLD); }
             @Override public ColorUIResource getControlDarkShadow() { return new ColorUIResource(BORDER); }
             @Override public ColorUIResource getControlInfo() { return new ColorUIResource(TEXT); }
         });
         try { UIManager.setLookAndFeel(new MetalLookAndFeel()); }
         catch (javax.swing.UnsupportedLookAndFeelException exception) { throw new IllegalStateException(exception); }
-        Font font = font(Font.PLAIN, 13);
-        for (String component : new String[]{"Label", "Button", "ToggleButton", "TextField", "FormattedTextField", "PasswordField", "ComboBox", "Spinner", "Table", "TableHeader", "List", "ToolTip", "OptionPane"}) {
-            UIManager.put(component + ".font", font);
-            UIManager.put(component + ".background", SURFACE);
-            UIManager.put(component + ".foreground", TEXT);
+        FontUIResource font = new FontUIResource(font(Font.PLAIN, 14));
+        for (String component : new String[]{"Label", "Button", "ToggleButton", "TextField", "TextArea", "TextPane", "FormattedTextField", "PasswordField", "ComboBox", "Spinner", "Table", "TableHeader", "List", "ToolTip", "OptionPane", "CheckBox", "Slider", "MenuItem"}) {
+            UIManager.put(component + ".font", font); UIManager.put(component + ".background", SURFACE); UIManager.put(component + ".foreground", TEXT);
         }
-        UIManager.put("Panel.background", SURFACE);
-        UIManager.put("OptionPane.messageForeground", TEXT);
-        UIManager.put("OptionPane.messageFont", font);
-        UIManager.put("OptionPane.buttonFont", font);
-        UIManager.put("Button.gradient", null);
-        UIManager.put("ToggleButton.gradient", null);
-        UIManager.put("Button.disabledText", MUTED);
-        UIManager.put("ToggleButton.select", new Color(47, 89, 77));
-        UIManager.put("ComboBox.selectionBackground", new Color(47, 89, 77));
-        UIManager.put("ComboBox.selectionForeground", TEXT);
-        UIManager.put("ComboBox.disabledBackground", SURFACE);
-        UIManager.put("ComboBox.disabledForeground", MUTED);
-        UIManager.put("TextField.inactiveForeground", MUTED);
-        UIManager.put("TextField.inactiveBackground", BACKGROUND);
-        UIManager.put("FormattedTextField.inactiveForeground", MUTED);
-        UIManager.put("FormattedTextField.inactiveBackground", BACKGROUND);
-        UIManager.put("TextField.caretForeground", GREEN);
-        UIManager.put("PasswordField.caretForeground", GREEN);
-        UIManager.put("TextField.selectionBackground", new Color(47, 89, 77));
-        UIManager.put("PasswordField.selectionBackground", new Color(47, 89, 77));
-        javax.swing.border.Border fieldBorder = BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(5, 8, 5, 8));
-        UIManager.put("TextField.border", fieldBorder);
-        UIManager.put("PasswordField.border", fieldBorder);
-        UIManager.put("FormattedTextField.border", fieldBorder);
-        UIManager.put("Table.selectionBackground", new Color(47, 89, 77));
-        UIManager.put("Table.selectionForeground", TEXT);
-        UIManager.put("Table.gridColor", BORDER);
-        UIManager.put("ScrollPane.background", BACKGROUND);
-        UIManager.put("Viewport.background", BACKGROUND);
-        UIManager.put("ScrollBar.background", BACKGROUND);
-        UIManager.put("ScrollBar.thumb", BORDER);
-        UIManager.put("ScrollBar.width", 10);
-        UIManager.put("ToolTip.background", RAISED);
-        UIManager.put("ToolTip.border", BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(5, 8, 5, 8)));
+        UIManager.put("Panel.background", SURFACE); UIManager.put("OptionPane.messageForeground", TEXT);
+        UIManager.put("OptionPane.messageFont", font); UIManager.put("OptionPane.buttonFont", font);
+        UIManager.put("Button.gradient", null); UIManager.put("ToggleButton.gradient", null);
+        UIManager.put("Button.disabledText", MUTED); UIManager.put("ToggleButton.select", CRIMSON);
+        UIManager.put("ToggleButton.border", BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(8, 14, 8, 14)));
+        UIManager.put("ComboBox.selectionBackground", CRIMSON); UIManager.put("ComboBox.selectionForeground", TEXT);
+        UIManager.put("ComboBox.disabledBackground", BACKGROUND); UIManager.put("ComboBox.disabledForeground", MUTED);
+        UIManager.put("ComboBox.border", BorderFactory.createLineBorder(BORDER));
+        UIManager.put("TextField.inactiveForeground", MUTED); UIManager.put("TextField.inactiveBackground", BACKGROUND);
+        UIManager.put("FormattedTextField.inactiveForeground", MUTED); UIManager.put("FormattedTextField.inactiveBackground", BACKGROUND);
+        for (String field : new String[]{"TextField", "PasswordField", "FormattedTextField"}) {
+            UIManager.put(field + ".caretForeground", GOLD); UIManager.put(field + ".selectionBackground", CRIMSON); UIManager.put(field + ".selectionForeground", TEXT);
+            UIManager.put(field + ".border", BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 1, 2, 1, BORDER), BorderFactory.createEmptyBorder(7, 9, 7, 9)));
+        }
+        UIManager.put("Table.selectionBackground", CRIMSON); UIManager.put("Table.selectionForeground", TEXT); UIManager.put("Table.gridColor", BORDER);
+        UIManager.put("ScrollPane.background", BACKGROUND); UIManager.put("Viewport.background", BACKGROUND);
+        UIManager.put("ScrollBar.background", BACKGROUND); UIManager.put("ScrollBar.thumb", BORDER); UIManager.put("ScrollBar.width", 10);
+        UIManager.put("ToolTip.background", RAISED); UIManager.put("ToolTip.border", BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(GOLD), BorderFactory.createEmptyBorder(7, 10, 7, 10)));
+        UIManager.put("Slider.trackWidth", 4); UIManager.put("Slider.majorTickLength", 6);
     }
 }

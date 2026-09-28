@@ -33,20 +33,21 @@ final class ChallengeTrack extends JComponent {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         int wins = session == null ? 0 : session.getWins();
         int first = session != null && !session.isChallenge() ? wins / 10 * 10 : 0;
-        int gap = 6;
-        int cell = (getWidth() - gap * 9) / 10;
+        int cell = getWidth() / 10;
+        g.setColor(GameTheme.BORDER); g.drawLine(cell / 2, 18, getWidth() - cell / 2, 18);
         g.setFont(GameTheme.font(Font.PLAIN, 11));
         for (int i = 0; i < 10; i++) {
             int stage = first + i;
             boolean completed = wins > stage;
             boolean current = session != null && wins == stage && session.getState() != GameSession.State.FINISHED;
-            int x = i * (cell + gap);
-            g.setColor(completed ? new java.awt.Color(39, 70, 59) : GameTheme.SURFACE);
-            g.fillRoundRect(x, 0, cell, 28, 4, 4);
+            int x = i * cell + cell / 2;
+            boolean elite = (stage + 1) % 3 == 0 || i == 9;
+            g.setColor(current ? GameTheme.CRIMSON : GameTheme.SURFACE); GameArt.diamond(g, x, 18, 18);
             g.setColor(completed ? GameTheme.GREEN : current ? GameTheme.GOLD : GameTheme.MUTED);
-            if (current) g.drawRoundRect(x, 0, cell - 1, 27, 4, 4);
+            int r = elite ? 18 : 15;
+            g.drawPolygon(new int[]{x, x + 13, x, x - 13}, new int[]{18 - r, 18, 18 + r, 18}, 4);
             String text = String.format("%02d", stage + 1);
-            g.drawString(text, x + (cell - g.getFontMetrics().stringWidth(text)) / 2, 18);
+            g.drawString(text, x - g.getFontMetrics().stringWidth(text) / 2, 22);
         }
         g.dispose();
     }

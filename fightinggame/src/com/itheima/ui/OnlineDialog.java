@@ -30,7 +30,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
 
 @SuppressWarnings("serial")
-public final class OnlineDialog extends JDialog {
+public final class OnlineDialog extends GameDialog {
     private final JTextField address = new JTextField("127.0.0.1:8765", 21);
     private final JTextField name;
     private final JSpinner port = new JSpinner(new SpinnerNumberModel(8765, 1024, 65535, 1));
@@ -43,18 +43,19 @@ public final class OnlineDialog extends JDialog {
     private DuelClient client;
     private LocalServer server;
     private boolean starting, disposed;
+    private String previousPhase = "";
 
     public OnlineDialog(JFrame owner, String nickname) {
-        super(owner, "联机竞技场 | IRON ARENA", true);
+        super(owner, "联机竞技场 / 双人对决");
+        GameAudio.start(); GameAudio.scene(false);
         name = new JTextField(nickname, 10);
         port.setEditor(new JSpinner.NumberEditor(port, "0"));
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setMinimumSize(new Dimension(1000, 730)); setSize(1140, 820); setLocationRelativeTo(owner);
         JPanel root = panel(new BorderLayout(0, 14));
-        root.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24)); setContentPane(root);
+        root.setBorder(BorderFactory.createEmptyBorder(14, 20, 16, 20)); setContentPane(root);
         JPanel heading = panel(new GridLayout(0, 1, 0, 10));
-        JLabel title = label("联机竞技场 / 双人对决"); title.setFont(GameTheme.font(Font.BOLD, 22));
-        heading.add(title);
+        host.setGlyph("users"); ready.setGlyph("swords"); rematch.setGlyph("sparkles");
         JPanel connection = panel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         connection.add(label("地址")); connection.add(address); connection.add(connect); connection.add(disconnect);
         connection.add(label("端口")); connection.add(port); connection.add(host); heading.add(connection);
@@ -64,13 +65,15 @@ public final class OnlineDialog extends JDialog {
         JPanel middle = panel(new BorderLayout(14, 10)); middle.add(arena, BorderLayout.CENTER);
         JPanel commands = panel(new GridLayout(1, 5, 8, 0));
         String[] labels = {"普通攻击", "强力一击", "生命汲取", "防御", "治疗药水"};
+        String[] glyphs = {"sword", "swords", "heart-pulse", "shield", "flask-conical"};
         String[] details = {"100%攻击", "180%攻击 / -10 HP", "120%攻击 / 吸血", "下次命中减伤50%", "恢复50 HP"};
         for (int i = 0; i < actions.length; i++) {
             String action = Battle.Action.values()[i].name();
             actions[i] = button(labels[i]); actions[i].setDetail(details[i], i == 1 ? GameTheme.GOLD : GameTheme.GREEN);
+            actions[i].setGlyph(glyphs[i]);
             actions[i].addActionListener(event -> command("action", action)); commands.add(actions[i]);
         }
-        commands.setPreferredSize(new Dimension(850, 76)); middle.add(commands, BorderLayout.SOUTH);
+        commands.setPreferredSize(new Dimension(850, 90)); middle.add(commands, BorderLayout.SOUTH);
         root.add(middle, BorderLayout.CENTER);
         JPanel bottom = panel(new BorderLayout(0, 10));
         JPanel lobby = panel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -79,7 +82,7 @@ public final class OnlineDialog extends JDialog {
         log.setEditable(false); log.setLineWrap(true); log.setWrapStyleWord(true);
         log.setFont(GameTheme.font(Font.PLAIN, 12)); log.setBackground(GameTheme.SURFACE); log.setForeground(GameTheme.TEXT);
         log.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-        JScrollPane scroll = new JScrollPane(log); scroll.setPreferredSize(new Dimension(800, 110));
+        JScrollPane scroll = new JScrollPane(log); scroll.setPreferredSize(new Dimension(800, 82));
         scroll.setBorder(BorderFactory.createEmptyBorder()); bottom.add(scroll, BorderLayout.CENTER); root.add(bottom, BorderLayout.SOUTH);
         connect.addActionListener(event -> connect()); host.addActionListener(event -> host());
         disconnect.addActionListener(event -> { if (confirmLeave()) stop(); });
@@ -92,7 +95,7 @@ public final class OnlineDialog extends JDialog {
         });
         refreshOnline(null);
     }
-    private boolean confirm(String text) { return JOptionPane.showConfirmDialog(this, text, "联机竞技场", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION; }
+    private boolean confirm(String text) { return GameDialogs.showConfirmDialog(this, text, "联机竞技场", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION; }
     private boolean confirmLeave() {
         return client == null && server == null || confirm(server != null ? "关闭房间并断开连接？房间内所有玩家都将断开。" : "断开连接并退出当前对局？");
     }
@@ -142,6 +145,9 @@ public final class OnlineDialog extends JDialog {
         JsonNode me = fighter(state, seat);
         JsonNode p1 = fighter(state, 0), p2 = fighter(state, 1);
         String phase = state == null ? "" : state.path("phase").asText();
+        GameAudio.scene(phase.equals("FIGHTING"));
+        if (phase.equals("FINISHED") && !previousPhase.equals(phase)) GameAudio.effect(seat >= 0 && state.path("winner").asInt(-1) != seat ? "defeat" : "victory");
+        previousPhase = phase;
         boolean bothOnline = p1 != null && p2 != null && p1.path("connected").asBoolean() && p2.path("connected").asBoolean();
         join.setEnabled(available && seat < 0 && (p1 == null || p2 == null));
         ready.setEnabled(available && me != null && phase.equals("WAITING") && !me.path("ready").asBoolean());
@@ -200,7 +206,7 @@ public final class OnlineDialog extends JDialog {
         if (server != null) server.close(); server = null;
         starting = false; refreshOnline(null);
     }
-    @Override public void dispose() { disposed = true; stop(); super.dispose(); }
+    @Override public void dispose() { disposed = true; stop(); super.dispose(); if (getOwner() == null) GameAudio.shutdown(); }
     private static JPanel panel(java.awt.LayoutManager layout) { JPanel panel = new JPanel(layout); panel.setBackground(GameTheme.BACKGROUND); return panel; }
     private static JLabel label(String text) { JLabel label = new JLabel(text); label.setForeground(GameTheme.TEXT); label.setFont(GameTheme.font(Font.PLAIN, 12)); return label; }
     private static GameButton button(String text) { return new GameButton(text, GameTheme.SURFACE); }
