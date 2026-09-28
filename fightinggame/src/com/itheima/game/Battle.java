@@ -18,6 +18,7 @@ public final class Battle {
     private int round = 1;
     private int energy;
     private boolean enemyUsesSkill;
+    private Action lastEnemyAction = Action.ATTACK;
 
     public Battle(HeroCharacter hero, EnemyCharacter enemy, Random random) {
         this.hero = hero;
@@ -31,6 +32,8 @@ public final class Battle {
     public int getDrainCooldown() { return drainCooldown; }
     public boolean isOver() { return !hero.isAlive() || !enemy.isAlive(); }
     public int getEnergy() { return energy; }
+    /** The action used by the most recent enemy response, for deterministic UI animation. */
+    public Action getLastEnemyAction() { return lastEnemyAction; }
     public String getIntent() {
         if (!enemyUsesSkill) return "普通攻击";
         return switch (enemy.getSkill()) {
@@ -82,21 +85,24 @@ public final class Battle {
 
     private void enemyTurn(List<String> messages) {
         if (!enemyUsesSkill) {
+            lastEnemyAction = Action.ATTACK;
             hit(enemy, hero, enemy.getAttack(), "普通攻击", messages);
             return;
         }
         switch (enemy.getSkill()) {
-            case HEAVY_STRIKE -> hit(enemy, hero, enemy.getAttack() * 15 / 10, "猛击", messages);
+            case HEAVY_STRIKE -> { lastEnemyAction = Action.POWER_STRIKE; hit(enemy, hero, enemy.getAttack() * 15 / 10, "猛击", messages); }
             case DOUBLE_STRIKE -> {
+                lastEnemyAction = Action.ATTACK;
                 for (int i = 0; i < 2 && hero.isAlive(); i++) {
                     hit(enemy, hero, enemy.getAttack() / 2, "快速攻击 (" + (i + 1) + "/2)", messages);
                 }
             }
             case GUARD -> {
+                lastEnemyAction = Action.DEFEND;
                 enemy.defend();
                 messages.add(enemy.getName() + "进入防御姿态，下次受到的攻击伤害减半。");
             }
-            case FIREBALL -> hit(enemy, hero, enemy.getAttack() * 18 / 10, "火球术", messages);
+            case FIREBALL -> { lastEnemyAction = Action.DRAIN; hit(enemy, hero, enemy.getAttack() * 18 / 10, "火球术", messages); }
         }
     }
 

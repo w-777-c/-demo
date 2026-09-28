@@ -28,6 +28,11 @@ public final class UiResourceTests {
                 for (int y = 0; y < actor.getHeight(); y++) for (int x = 0; x < actor.getWidth(); x++) if ((actor.getRGB(x, y) >>> 24) != 0) opaque++;
                 check(opaque > 60000, "nonblank complete actor " + style);
                 GameArt.actor(g, 120 + style * 240, 780, 600, style, false, true, 0);
+                BufferedImage idle = pose(style, 0, 1);
+                for (int action = 1; action <= 6; action++) {
+                    BufferedImage motion = pose(style, action, .45);
+                    check(differentPixels(idle, motion) > 700, "distinct pose " + style + "/" + action);
+                }
             }
             g.dispose(); Files.createDirectories(Path.of("build/screenshots")); ImageIO.write(sheet, "png", Path.of("build/screenshots/cast.png").toFile());
             for (String name : new String[]{"overture", "battle", "hover", "click", "attack", "guard", "heal", "magic", "victory", "defeat", "open"}) {
@@ -59,6 +64,16 @@ public final class UiResourceTests {
             try { clip.open(input); } catch (javax.sound.sampled.LineUnavailableException absent) { System.out.println("SKIP audio device: " + absent.getMessage()); return; }
             clip.start(); Thread.sleep(100); check(clip.getLongFramePosition() > 0, "audio device advances playback");
         }
+    }
+    private static BufferedImage pose(int style, int action, double phase) {
+        BufferedImage image = new BufferedImage(260, 360, BufferedImage.TYPE_INT_ARGB);
+        var graphics = image.createGraphics(); GameArt.quality(graphics);
+        GameArt.actor(graphics, 130, 350, 330, style, false, true, 0, action, phase); graphics.dispose(); return image;
+    }
+    private static int differentPixels(BufferedImage first, BufferedImage second) {
+        int changed = 0;
+        for (int y = 0; y < first.getHeight(); y += 2) for (int x = 0; x < first.getWidth(); x += 2) if (first.getRGB(x, y) != second.getRGB(x, y)) changed++;
+        return changed;
     }
     private static void check(boolean value, String description) { if (!value) throw new AssertionError(description); checks++; }
 }

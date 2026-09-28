@@ -165,9 +165,12 @@ public final class GameFrame extends JFrame {
         ultimate.addActionListener(event -> {
             if (session == null || session.getState() != GameSession.State.FIGHTING) return;
             int hp = session.getHero().getHP(), enemyHP = session.getEnemy().getHP();
+            int round = session.getBattle().getRound();
             session.ultimate().forEach(this::append);
-            GameAudio.effect("magic");
-            arena.animateTurn(Battle.Action.POWER_STRIKE, hp, enemyHP);
+            if (session.getBattle().getRound() != round) {
+                GameAudio.effect("magic");
+                arena.animateUltimate(hp, enemyHP);
+            }
             if (session.getState() == GameSession.State.FINISHED) finish();
             refresh();
         });
@@ -313,11 +316,13 @@ public final class GameFrame extends JFrame {
         if (session == null || session.getState() != GameSession.State.FIGHTING) return;
         int previousHeroHP = session.getHero().getHP();
         int previousEnemyHP = session.getEnemy().getHP();
+        int previousRound = session.getBattle().getRound();
         append("\n[第 " + session.getBattle().getRound() + " 回合]");
         session.play(action).forEach(this::append);
-        GameAudio.effect(switch (action) { case DEFEND -> "guard"; case POTION -> "heal"; case DRAIN -> "magic"; default -> "attack"; });
-        if (session.getState() == GameSession.State.RESTING) GameAudio.effect("victory");
-        arena.animateTurn(action, previousHeroHP, previousEnemyHP);
+        if (session.getBattle().getRound() != previousRound) {
+            GameAudio.effect(switch (action) { case DEFEND -> "guard"; case POTION -> "heal"; case DRAIN -> "magic"; default -> "attack"; });
+            arena.animateTurn(action, previousHeroHP, previousEnemyHP);
+        }
         if (session.getState() == GameSession.State.FINISHED) finish();
         refresh();
     }

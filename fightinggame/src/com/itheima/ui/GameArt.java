@@ -72,11 +72,27 @@ final class GameArt {
     }
     static BufferedImage actorImage(int style) { return ACTORS.computeIfAbsent(style, GameArt::renderActor); }
     static void actor(Graphics2D canvas, double x, double ground, double height, int style, boolean flip, boolean alive, double breathe) {
+        actor(canvas, x, ground, height, style, flip, alive, breathe, 0, 1);
+    }
+    /** Draws a cached illustration with a deterministic pose. action: 0 idle, 1 attack, 2 power, 3 magic, 4 guard, 5 potion, 6 ultimate. */
+    static void actor(Graphics2D canvas, double x, double ground, double height, int style, boolean flip, boolean alive, double breathe, int action, double phase) {
         Graphics2D g = (Graphics2D) canvas.create(); quality(g);
         g.setColor(new Color(4, 5, 8, 95)); g.fill(new Ellipse2D.Double(x - height * 0.19, ground - 5, height * 0.38, 14));
-        g.translate(x, ground); if (flip) g.scale(-1, 1);
+        int role = style % 3;
+        double motion = Math.max(0, Math.min(1, phase));
+        double strike = Math.sin(Math.PI * motion);
+        double lean = 0, lift = 0, tilt = 0;
+        if (action == 1) { lean = (role == 1 ? 34 : role == 0 ? 24 : 16) * strike; tilt = (role == 1 ? .08 : .035) * strike; }
+        else if (action == 2) { lean = 46 * strike; lift = (role == 2 ? 13 : 3) * strike; tilt = .12 * strike; }
+        else if (action == 3 || action == 6) { lift = (role == 2 ? 20 : 8) * strike; tilt = Math.sin(motion * Math.PI * 2) * .05; }
+        else if (action == 4) { lean = -8 * strike; tilt = -.035 * strike; }
+        else if (action == 5) { lift = 8 * strike; tilt = -.06 * strike; }
+        double direction = flip ? -1 : 1;
+        g.translate(x + direction * lean, ground - lift); if (flip) g.scale(-1, 1);
+        g.rotate(direction * tilt);
         if (!alive) { g.setComposite(AlphaComposite.SrcOver.derive(0.38f)); g.rotate(-0.13); }
-        double scale = height / 700; g.scale(scale * (1 + breathe * 0.002), scale * (1 + breathe * 0.004));
+        double scale = height / 700; double idleSway = action == 0 ? breathe * 0.002 : 0;
+        g.scale(scale * (1 + idleSway), scale * (1 + breathe * 0.004));
         g.drawImage(actorImage(style), -240, -700, null); g.dispose();
     }
     private static BufferedImage renderActor(int style) {
