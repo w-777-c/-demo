@@ -28,11 +28,20 @@ if (-not $jdkBin) { throw 'JDK 17+ is required. Set JAVA_HOME to your JDK instal
 $libraries = Join-Path $PSScriptRoot 'build\lib\*'
 
 $classes = Join-Path $PSScriptRoot 'build\classes'
+if (Test-Path -LiteralPath $classes) {
+    $resolvedClasses = (Resolve-Path -LiteralPath $classes).Path
+    $resolvedBuild = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'build'))
+    if (-not $resolvedClasses.StartsWith($resolvedBuild + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Classes directory is outside build.' }
+    Remove-Item -LiteralPath $resolvedClasses -Recurse -Force
+}
 New-Item -ItemType Directory -Force $classes | Out-Null
-Get-ChildItem -LiteralPath $classes -Recurse -Filter '*.class' | Remove-Item -Force
 $sources = @(Get-ChildItem 'fightinggame\src' -Recurse -Filter '*.java' | ForEach-Object { $_.FullName })
 & (Join-Path $jdkBin 'javac.exe') --release 17 -encoding UTF-8 -Xlint:all -cp $libraries -d $classes @sources
 if ($LASTEXITCODE -ne 0) { throw 'Compilation failed.' }
+$resources = Join-Path $PSScriptRoot 'fightinggame\resources'
+if (Test-Path -LiteralPath $resources) {
+    Copy-Item -Path (Join-Path $resources '*') -Destination $classes -Recurse -Force
+}
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $jarPath = Join-Path $PSScriptRoot 'build\fightinggame.jar'
@@ -58,6 +67,10 @@ if ($Test -or $GuiTest -or $NetworkTest) {
     $testMain = if ($NetworkTest) { 'com.itheima.NetworkSmokeTest' } elseif ($GuiTest) { 'com.itheima.GuiSmokeTest' } else { 'com.itheima.GameTests' }
     & (Join-Path $jdkBin 'java.exe') '-Dfile.encoding=UTF-8' -ea -cp "$classes;$testClasses;$libraries" $testMain
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+    if ($Test) {
+        & (Join-Path $jdkBin 'java.exe') '-Dfile.encoding=UTF-8' -ea -cp "$classes;$testClasses;$libraries" com.itheima.ui.UiResourceTests
+        if ($LASTEXITCODE -ne 0) { throw 'Presentation tests failed.' }
+    }
     return
 }
 if ($BuildOnly) { Write-Host 'Built build/fightinggame.jar'; return }

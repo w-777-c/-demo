@@ -1,6 +1,6 @@
 param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$Version = '1.1.0',
+    [string]$Version = '1.2.0',
     [string]$JdkPath
 )
 
@@ -54,12 +54,17 @@ try {
 
     & (Join-Path $packagingJdk 'bin\jlink.exe') --add-modules ALL-MODULE-PATH --strip-debug --no-header-files --no-man-pages --compress=zip-6 --output $runtime
     if ($LASTEXITCODE -ne 0) { throw 'Runtime image creation failed.' }
-    & (Join-Path $packagingJdk 'bin\jpackage.exe') --type app-image --name IronArena --app-version $Version --vendor IronArena --description 'Iron Arena turn-based fighting game' --input $inputDirectory --main-jar fightinggame.jar --main-class com.itheima.App --runtime-image $runtime --dest $imageDirectory --java-options '-Dfile.encoding=UTF-8' --java-options '-Dfightinggame.dataDir=$APPDIR/../data'
+    & (Join-Path $packagingJdk 'bin\jpackage.exe') --type app-image --name IronArena --app-version $Version --vendor IronArena --description 'Iron Arena - Crimson Theatre' --icon (Join-Path $PSScriptRoot 'packaging\IronArena.ico') --input $inputDirectory --main-jar fightinggame.jar --main-class com.itheima.App --runtime-image $runtime --dest $imageDirectory --java-options '-Dfile.encoding=UTF-8' --java-options '-Dfightinggame.dataDir=$APPDIR/../data'
     if ($LASTEXITCODE -ne 0) { throw 'EXE packaging failed.' }
 
     $image = Join-Path $imageDirectory 'IronArena'
     New-Item -ItemType Directory -Path (Join-Path $image 'data') | Out-Null
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'packaging\README.txt') -Destination $image
+    $licenses = Join-Path $image 'licenses'
+    New-Item -ItemType Directory -Path $licenses | Out-Null
+    Copy-Item -Path (Join-Path $PSScriptRoot 'fightinggame\resources\fonts\*-OFL.txt') -Destination $licenses
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'fightinggame\resources\icons\LICENSE.txt') -Destination (Join-Path $licenses 'Lucide.txt')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'fightinggame\resources\CREDITS.md') -Destination $licenses
     # Keep the runtime's legal directory and record the exact source JDK in the release.
     Copy-Item -LiteralPath (Join-Path $packagingJdk 'release') -Destination (Join-Path $image 'JAVA-RUNTIME.txt')
     $resolvedImage = (Resolve-Path -LiteralPath $image).Path

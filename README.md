@@ -1,10 +1,12 @@
 # 铁境竞技场 / Iron Arena
 
-基于原始 Java 文字格斗 demo 完善的 Swing 桌面回合制游戏。1.1.0 包含职业远征、战后成长和原生桌面联机；免安装 EXE 自带 Java 与联机服务，玩家无需打开浏览器。保留经典控制台入口。
+基于原始 Java 文字格斗 demo 完善的 Swing 桌面回合制游戏。1.2.0「绯幕剧场」采用酒红幕布、古金纹饰与冷色战斗光效，包含职业远征、战后成长和原生桌面联机。免安装 EXE 自带 Java 与联机服务，玩家无需打开浏览器。保留经典控制台入口。
 
 ![铁境竞技场桌面版](docs/images/arena.png)
 
-桌面界面包含关卡进度、分类技能按钮、平滑血条、攻击动作、生命变化提示和分色战斗日志。战士、刺客、坦克、法师及守关者拥有不同装备外观；登录、属性分配和可排序战绩表使用统一的深色主题。
+桌面界面包含三职业原创赛璐璐风格立绘、剧场舞台、菱形关卡轨道和票券式技能按钮。登录、角色选择、奖励、设置、战绩榜与联机窗口使用统一的剧场主题；字体、图标和音频全部随包提供，可离线使用。
+
+大厅与战斗分别播放原创合成配乐，按钮悬停、点击、出招和胜负有声音反馈。右上角设置可分别调节音乐、音效和动态效果；保存到 `data/presentation.properties`，取消会恢复原值。主窗口最小化时暂停背景音乐，没有可用音频设备时仍可正常游玩。配乐为程序合成音频，角色与舞台由 Java2D 绘制。素材来源和许可见 [资源说明](fightinggame/resources/CREDITS.md)。
 
 ## 启动
 
@@ -18,7 +20,7 @@ Windows 下双击根目录 `start.bat`，或者运行：
 
 ```powershell
 .\run.ps1 -Console    # 控制台版
-.\run.ps1 -Test       # 战斗、成长、存储、输入回归测试
+.\run.ps1 -Test       # 战斗、存储、字体、立绘、音频和设置测试
 .\run.ps1 -GuiTest    # 打开真实窗口，测试交互并生成截图
 .\run.ps1 -NetworkTest # 原生开房、双客户端对战、重连、再战和服务关闭
 .\run.ps1 -BuildOnly  # 只编译和打包
@@ -39,20 +41,20 @@ java -jar build/fightinggame.jar --console
 java -Dfightinggame.dataDir=D:/arena-data -jar build/fightinggame.jar
 ```
 
-IDE 中须将 `build/lib` 下的三个 Jackson JAR 加入桌面模块依赖。建议使用脚本运行，确保 `build/server` 和 `build/lib` 同时存在。不要运行仓库原有 `out/production` 中的旧 `.class` 文件；分发时也不能只复制主 JAR。
+IDE 中须将 `build/lib` 下的三个 Jackson JAR 加入桌面模块依赖，并将 `fightinggame/resources` 标记为资源目录。建议使用脚本运行，确保 `build/server` 和 `build/lib` 同时存在。不要运行仓库原有 `out/production` 中的旧 `.class` 文件；分发时也不能只复制主 JAR。
 
 ## Windows 免安装版
 
-已打包的版本位于 `dist/IronArena-1.1.0-windows-x64.zip`。完整解压后，双击目录中的 `IronArena.exe` 即可运行；玩家无需安装 Java。`app` 和 `runtime` 文件夹必须与 EXE 一起保留。旧版 1.0.0 不会被覆盖。
+已打包的版本位于 `dist/IronArena-1.2.0-windows-x64.zip`。完整解压后，双击目录中的 `IronArena.exe` 即可运行；玩家无需安装 Java。`app` 和 `runtime` 文件夹必须与 EXE 一起保留。旧版本不会被覆盖。
 
 免安装版将账号和战绩保存在 EXE 旁边的 `data` 文件夹，不依赖启动时的工作目录。移动游戏时可以一起移动存档；更新版本时先关闭游戏，再将旧版 `data` 复制到新目录。请解压到有写入权限的位置。分发包不包含开发目录的账号或战绩。
 
 开发者重新打包需要完整的 Windows x64 JDK 21+，包括 `jpackage`、`jlink` 和 `jmods`：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\package.ps1 -Version 1.1.0
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\package.ps1 -Version 1.2.0
 # 也可以明确指定完整 JDK：
-.\package.ps1 -Version 1.1.0 -JdkPath 'C:\Java\jdk-21'
+.\package.ps1 -Version 1.2.0 -JdkPath 'C:\Java\jdk-21'
 ```
 
 脚本先构建服务和桌面程序，再生成带完整模块的 Java 运行环境、EXE 目录、ZIP 和 SHA-256 校验文件。保留完整模块以支持桌面、WebSocket、TLS 和 Spring 内置服务。同版本输出已存在时会停止，避免覆盖已有游戏或存档。`dist` 和构建工具位于 Git 忽略范围，源码仓库不携带大型二进制发布包。
@@ -114,9 +116,14 @@ fightinggame/src/com/itheima/
   game/Encounters.java      敌人生成与难度成长
   storage/                  密码摘要、本地账号和战绩存储
   ui/GameFrame.java         Swing 桌面界面与账号对话框
-  ui/ArenaPanel.java        原创像素角色、竞技场、血条与待机动画
+  ui/ArenaPanel.java        战斗舞台、血条、待机与技能特效
+  ui/GameArt.java           原创剧场场景与三职业角色绘制
   ui/GameTheme.java         主窗口与弹窗的统一主题
   ui/GameButton.java        技能说明、悬停和键盘焦点状态
+  ui/GameDialog.java        统一弹窗、标题栏、关闭和 Escape
+  ui/GameAudio.java         异步音频设备、场景音乐与交互音效
+  ui/SettingsDialog.java    音量、动态效果与设置保存
+  ui/UiAssets.java          随包字体和 Lucide 图标加载
   ui/ChallengeTrack.java    十关与无尽模式的进度显示
   ui/ConsoleInput.java      可重试输入与 EOF 处理
   ui/Login.java             控制台账号菜单
@@ -124,6 +131,7 @@ fightinggame/src/com/itheima/
 fightinggame/test/com/itheima/
   GameTests.java            核心回归测试
   GuiSmokeTest.java         桌面交互与布局检查
+  ui/UiResourceTests.java   字体、角色、音频及设置资源检查
 ```
 
 保留原来的 `doman` 包名。桌面联网使用 JDK HttpClient 和 Jackson JSON，`net/LocalServer` 管理随包分发的 Spring Boot 服务进程，`ui/OnlineDialog` 显示服务器状态。角色与场景通过 Java2D 绘制，无需联网加载美术资源。单机账号与联机临时席位彼此独立，联机对局不计入本地战绩。

@@ -1,5 +1,5 @@
 param(
-    [string]$Archive = (Join-Path $PSScriptRoot '..\dist\IronArena-1.1.0-windows-x64.zip')
+    [string]$Archive = (Join-Path $PSScriptRoot '..\dist\IronArena-1.2.0-windows-x64.zip')
 )
 
 $ErrorActionPreference = 'Stop'
