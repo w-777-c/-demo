@@ -16,17 +16,30 @@ public final class Battle {
     private final Random random;
     private int drainCooldown;
     private int round = 1;
+    private int energy;
+    private boolean enemyUsesSkill;
 
     public Battle(HeroCharacter hero, EnemyCharacter enemy, Random random) {
         this.hero = hero;
         this.enemy = enemy;
         this.random = random;
         hero.clearDefense();
+        enemyUsesSkill = random.nextBoolean();
     }
 
     public int getRound() { return round; }
     public int getDrainCooldown() { return drainCooldown; }
     public boolean isOver() { return !hero.isAlive() || !enemy.isAlive(); }
+    public int getEnergy() { return energy; }
+    public String getIntent() {
+        if (!enemyUsesSkill) return "普通攻击";
+        return switch (enemy.getSkill()) {
+            case HEAVY_STRIKE -> "猛击 / 150%攻击";
+            case DOUBLE_STRIKE -> "快速攻击 / 连击两次";
+            case GUARD -> "防御姿态";
+            case FIREBALL -> "火球术 / 180%攻击";
+        };
+    }
 
     public static int calculateDamage(int attack, int defense) {
         return Math.max(1, attack - defense);
@@ -34,35 +47,32 @@ public final class Battle {
 
     public TurnResult play(Action action) {
         if (isOver()) return rejected("战斗已经结束。");
-        if (action == null) return rejected("请选择有效行动。");
-        if (action == Action.POWER_STRIKE && hero.getHP() <= 10) return rejected("生命不足，需要至少 11 HP。");
-        if (action == Action.DRAIN && drainCooldown > 0) return rejected("生命汲取尚在冷却，请选择其他行动。");
-        if (action == Action.POTION && hero.getPotions() == 0) return rejected("药水已用完。");
-        if (action == Action.POTION && hero.getHP() == hero.getMaxHP()) return rejected("生命已满，无需使用药水。");
-
-        List<String> messages = new ArrayList<>();
-        if (drainCooldown > 0) drainCooldown--;
-        switch (action) {
-            case ATTACK -> hit(hero, enemy, hero.getAttack(), "普通攻击", messages);
-            case POWER_STRIKE -> {
-                hero.spendHealth(10);
-                messages.add("强力一击消耗 10 HP。");
-                hit(hero, enemy, hero.getAttack() * 18 / 10, "强力一击", messages);
-            }
-            case DRAIN -> {
-                int damage = hit(hero, enemy, hero.getAttack() * 12 / 10, "生命汲取", messages);
-                int restored = hero.heal(Math.max(1, damage / 2));
-                messages.add("生命汲取恢复 " + restored + " HP。");
-                drainCooldown = 2;
-            }
-            case DEFEND -> {
-                hero.defend();
-                messages.add("你进入防御姿态，下次受到的攻击伤害减半。");
-            }
-            case POTION -> messages.add("使用治疗药水，恢复 " + hero.usePotion() + " HP。");
-        }
+        CombatRules.Result result = CombatRules.play(hero, enemy, action, drainCooldown);
+        if (!result.accepted()) return new TurnResult(false, result.messages());
+        drainCooldown = result.drainCooldown();
+        List<String> messages = new ArrayList<>(result.messages());
+        energy = Math.min(100, energy + 25);
         if (enemy.isAlive()) enemyTurn(messages);
         round++;
+        enemyUsesSkill = random.nextBoolean();
+        return new TurnResult(true, List.copyOf(messages));
+    }
+
+    public TurnResult ultimate() {
+        if (isOver()) return rejected("战斗已经结束。");
+        if (energy < 100) return rejected("能量不足，大招需要100能量。");
+        energy = 0;
+        drainCooldown = Math.max(0, drainCooldown - 1);
+        List<String> messages = new ArrayList<>();
+        int multiplier = switch (hero.getStyle()) { case VANGUARD -> 14; case RAIDER -> 30; case MYSTIC -> 18; };
+        hit(hero, enemy, hero.getAttack() * multiplier / 10, hero.getStyle().ultimate, messages);
+        if (hero.getStyle() != HeroCharacter.Style.RAIDER) {
+            messages.add("大招恢复 " + hero.heal(hero.getStyle() == HeroCharacter.Style.VANGUARD ? 45 : 40) + " HP。");
+        }
+        if (hero.getStyle() == HeroCharacter.Style.VANGUARD) hero.defend();
+        if (enemy.isAlive()) enemyTurn(messages);
+        round++;
+        enemyUsesSkill = random.nextBoolean();
         return new TurnResult(true, List.copyOf(messages));
     }
 
@@ -71,7 +81,7 @@ public final class Battle {
     }
 
     private void enemyTurn(List<String> messages) {
-        if (!random.nextBoolean()) {
+        if (!enemyUsesSkill) {
             hit(enemy, hero, enemy.getAttack(), "普通攻击", messages);
             return;
         }

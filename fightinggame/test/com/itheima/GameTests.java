@@ -26,13 +26,47 @@ public final class GameTests {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
-        characters(); battle(); sessions(); playability(); accounts(); console();
+        characters(); battle(); expeditions(); sessions(); playability(); accounts(); console();
         System.out.println("PASS: " + checks + " assertions");
     }
 
     private static void check(boolean condition, String name) {
         if (!condition) throw new AssertionError(name);
         checks++;
+    }
+
+    private static void expeditions() {
+        for (HeroCharacter.Style style : HeroCharacter.Style.values()) {
+            HeroCharacter hero = HeroCharacter.create("Hero", style);
+            EnemyCharacter opponent = enemy(2000, 1, Skill.GUARD);
+            Battle battle = new Battle(hero, opponent, fixed(false));
+            check(!battle.ultimate().accepted() && battle.getRound() == 1, "ultimate needs energy");
+            check(!battle.play(Action.POTION).accepted() && battle.getEnergy() == 0, "invalid skill earns no energy");
+            for (int i = 0; i < 4; i++) battle.play(Action.ATTACK);
+            check(battle.getEnergy() == 100, "four valid actions charge ultimate");
+            int hp = opponent.getHP();
+            check(battle.ultimate().accepted(), "class ultimate accepted");
+            int multiplier = style == HeroCharacter.Style.VANGUARD ? 14 : style == HeroCharacter.Style.RAIDER ? 30 : 18;
+            check(hp - opponent.getHP() == hero.getAttack() * multiplier / 10, "class ultimate damage");
+            check(battle.getEnergy() == 0 && !battle.ultimate().accepted(), "ultimate consumes energy once");
+            check(battle.getIntent().equals("普通攻击"), "telegraphed action matches fixed AI");
+        }
+        GameSession session = new GameSession(new HeroCharacter("Hero", 5000, 1000, 100), true, new Random(3), true);
+        for (int win = 1; win <= 10; win++) {
+            session.play(Action.ATTACK);
+            check(session.getWins() == win, "expedition win counted");
+            if (win == 10) break;
+            check(session.getRewards().size() == 3 && session.getRewards().stream().distinct().count() == 3, "three distinct rewards");
+            try { session.nextBattle(); throw new AssertionError("reward must be chosen"); } catch (IllegalStateException expected) { checks++; }
+            GameSession.Reward reward = session.getRewards().get(0);
+            session.chooseReward(reward);
+            try { session.chooseReward(reward); throw new AssertionError("reward claimed twice"); } catch (IllegalStateException expected) { checks++; }
+            session.nextBattle();
+            check(session.getEnemy().getName().startsWith("精英") == ((win + 1) % 3 == 0), "elite stages 3, 6, 9");
+            check(session.getBattle().getEnergy() == 0, "new battle resets ultimate energy");
+        }
+        check(session.isCleared() && session.getRewards().isEmpty(), "boss clears expedition without extra reward");
+        check(session.getUpgrades().size() == 9, "nine camp upgrades recorded");
     }
 
     private static Random fixed(boolean skill) {

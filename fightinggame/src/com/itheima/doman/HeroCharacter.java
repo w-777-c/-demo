@@ -1,8 +1,21 @@
 package com.itheima.doman;
 
 public class HeroCharacter extends Character {
+    public enum Style {
+        VANGUARD("铁卫", "不屈壁垒", "140%攻击，恢复45生命并防御", 9, 6, 5, 3),
+        RAIDER("狂刃", "破阵斩", "300%攻击", 4, 16, 0, 2),
+        MYSTIC("灵术师", "灵魂潮汐", "180%攻击，恢复40生命", 8, 10, 2, 4);
+        public final String title, ultimate, description;
+        public final int health, power, armor, appearance;
+        Style(String title, String ultimate, String description, int health, int power, int armor, int appearance) {
+            this.title = title; this.ultimate = ultimate; this.description = description;
+            this.health = health; this.power = power; this.armor = armor; this.appearance = appearance;
+        }
+        @Override public String toString() { return title; }
+    }
     private int level = 1;
     private int potions = 3;
+    private Style style = Style.VANGUARD;
 
     public HeroCharacter(String name, int hp, int attack, int defense) {
         super(name, hp, attack, defense);
@@ -17,6 +30,17 @@ public class HeroCharacter extends Character {
 
     public int getLevel() { return level; }
     public int getPotions() { return potions; }
+    public Style getStyle() { return style; }
+    public static HeroCharacter create(String name, Style style) {
+        HeroCharacter hero = create(name, style.health, style.power, style.armor);
+        hero.style = style;
+        return hero;
+    }
+    public void train(int health, int power, int armor) {
+        if (health < 0 || power < 0 || armor < 0) throw new IllegalArgumentException("Negative training");
+        grow(health, power, armor);
+    }
+    public void refillPotion() { potions = Math.min(3, potions + 1); }
 
     public void levelUp() {
         level++;
