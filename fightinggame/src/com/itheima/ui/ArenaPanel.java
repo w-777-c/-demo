@@ -16,6 +16,9 @@ import javax.swing.Timer;
 @SuppressWarnings("serial")
 public final class ArenaPanel extends JPanel {
     private GameSession session;
+    private boolean online;
+    private Character onlineHero, onlineEnemy;
+    private String onlineTitle = "等待对手", onlineSubtitle = "";
     private int tick;
     private final Timer animation;
     private long actionStarted;
@@ -31,10 +34,8 @@ public final class ArenaPanel extends JPanel {
         setBackground(GameTheme.BACKGROUND);
         animation = new Timer(30, event -> {
             tick++;
-            if (session != null) {
-                heroHealth += (ratio(session.getHero()) - heroHealth) * 0.16;
-                enemyHealth += (ratio(session.getEnemy()) - enemyHealth) * 0.16;
-            }
+            heroHealth += ((hero() == null ? 1 : ratio(hero())) - heroHealth) * 0.16;
+            enemyHealth += ((enemy() == null ? 1 : ratio(enemy())) - enemyHealth) * 0.16;
             repaint();
         });
         getAccessibleContext().setAccessibleName("竞技场与双方生命状态");
@@ -44,10 +45,23 @@ public final class ArenaPanel extends JPanel {
     @Override public void removeNotify() { animation.stop(); super.removeNotify(); }
 
     public void setSession(GameSession session) {
+        online = false;
         this.session = session;
         heroHealth = session == null ? 1 : ratio(session.getHero());
         enemyHealth = session == null ? 1 : ratio(session.getEnemy());
         actionStarted = 0;
+        repaint();
+    }
+
+    private Character hero() { return online ? onlineHero : session == null ? null : session.getHero(); }
+    private Character enemy() { return online ? onlineEnemy : session == null ? null : session.getEnemy(); }
+
+    public void setDuel(Character first, Character second, String title, String subtitle) {
+        heroChange = first == null || onlineHero == null ? 0 : first.getHP() - onlineHero.getHP();
+        enemyChange = second == null || onlineEnemy == null ? 0 : second.getHP() - onlineEnemy.getHP();
+        online = true; onlineHero = first; onlineEnemy = second;
+        onlineTitle = title; onlineSubtitle = subtitle;
+        if (heroChange != 0 || enemyChange != 0) { lastAction = Battle.Action.ATTACK; actionStarted = System.nanoTime(); }
         repaint();
     }
 
@@ -69,8 +83,8 @@ public final class ArenaPanel extends JPanel {
         int height = getHeight();
         int ground = height - 27;
         scenery(g, width, ground, height);
-        Character hero = session == null ? null : session.getHero();
-        Character enemy = session == null ? null : session.getEnemy();
+        Character hero = hero();
+        Character enemy = enemy();
         int barWidth = Math.min(285, width / 3);
         health(g, 20, 12, barWidth, hero, "挑战者", GameTheme.GREEN, heroHealth);
         health(g, width - barWidth - 20, 12, barWidth, enemy, "竞技场守卫", GameTheme.RED, enemyHealth);
@@ -90,12 +104,18 @@ public final class ArenaPanel extends JPanel {
         int enemyX = width * 3 / 4 - retaliation;
         int style = enemyStyle();
         Color enemyColor = style == 4 ? new Color(159, 160, 206) : style == 3 ? new Color(156, 168, 171) : GameTheme.RED;
-        fighter(g, heroX, ground - 7 - bob, scale, false, hero == null || hero.isAlive(), GameTheme.GREEN, 0);
+        fighter(g, heroX, ground - 7 - bob, scale, false, hero == null || hero.isAlive(), GameTheme.GREEN,
+                session == null || online ? 0 : session.getHero().getStyle().appearance);
         fighter(g, enemyX, ground - 7 - bob, scale, true, enemy == null || enemy.isAlive(), enemyColor, style);
         if (hero != null && hero.isDefending()) guard(g, heroX, ground - scale * 22, scale, GameTheme.GREEN);
         if (enemy != null && enemy.isDefending()) guard(g, enemyX, ground - scale * 22, scale, GameTheme.GOLD);
 
-        if (session == null || session.getState() != GameSession.State.FIGHTING) {
+        if (online) {
+            g.setFont(GameTheme.font(Font.BOLD, 20)); g.setColor(GameTheme.GOLD);
+            center(g, onlineTitle, width / 2, height / 2 - 3);
+            g.setFont(GameTheme.font(Font.PLAIN, 12)); g.setColor(GameTheme.MUTED);
+            center(g, onlineSubtitle, width / 2, height / 2 + 22);
+        } else if (session == null || session.getState() != GameSession.State.FIGHTING) {
             String title = session == null ? "铁境竞技场" : session.isCleared() ? "挑战通关"
                     : session.getState() == GameSession.State.RESTING ? "战斗胜利" : session.getHero().isAlive() ? "挑战结束" : "战斗失败";
             g.setColor(session == null ? GameTheme.TEXT : session.getHero().isAlive() ? GameTheme.GOLD : GameTheme.RED);
@@ -120,7 +140,9 @@ public final class ArenaPanel extends JPanel {
     }
 
     private void scenery(Graphics2D g, int width, int ground, int height) {
-        g.setColor(new Color(23, 29, 31));
+        int region = session == null || online ? 0 : Math.min(3, session.getWins() / 3);
+        Color[] walls = {new Color(23, 29, 31), new Color(37, 29, 29), new Color(25, 33, 36), new Color(32, 29, 40)};
+        g.setColor(walls[region]);
         g.fillRect(0, 66, width, ground - 66);
         g.setColor(new Color(32, 39, 41));
         for (int y = 88; y < ground; y += 36) {

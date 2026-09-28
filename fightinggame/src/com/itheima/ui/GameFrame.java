@@ -68,6 +68,11 @@ public final class GameFrame extends JFrame {
     private final JButton retire = button("撤退结算", SURFACE);
     private final JButton login = button("登录 / 注册", SURFACE);
     private final GameButton[] actions = new GameButton[5];
+    private final GameButton ultimate = button("职业大招", SURFACE);
+    private final JLabel vocation = label("职业 / 未选择", 13, GREEN);
+    private final JLabel intention = label("十关远征 / 击败王座守关者", 12, MUTED);
+    private final JLabel energy = label("能量 0 / 100", 12, GameTheme.GOLD);
+    private final JLabel loot = label("本局强化 0", 12, MUTED);
     private User user;
     private GameSession session;
     private boolean recorded;
@@ -95,7 +100,9 @@ public final class GameFrame extends JFrame {
         JButton leaderboard = button("战绩榜", SURFACE);
         leaderboard.addActionListener(event -> showLeaderboard());
         login.addActionListener(event -> accountAction());
-        profile.add(account); profile.add(leaderboard); profile.add(login);
+        JButton online = button("联机对战", GREEN);
+        online.addActionListener(event -> new OnlineDialog(this, user == null ? "挑战者" : user.getUsername()).setVisible(true));
+        profile.add(online); profile.add(account); profile.add(leaderboard); profile.add(login);
         header.add(profile, BorderLayout.EAST);
         header.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GameTheme.BORDER),
                 BorderFactory.createEmptyBorder(0, 0, 16, 0)));
@@ -110,6 +117,7 @@ public final class GameFrame extends JFrame {
         JPanel stageHeader = panel(new BorderLayout(0, 12), BACKGROUND);
         stageHeader.add(stageRow, BorderLayout.NORTH);
         stageHeader.add(track, BorderLayout.SOUTH);
+        stageHeader.add(intention, BorderLayout.CENTER);
         play.add(stageHeader, BorderLayout.NORTH);
         play.add(arena, BorderLayout.CENTER);
         JPanel controls = panel(new GridLayout(1, 5, 8, 0), BACKGROUND);
@@ -145,6 +153,14 @@ public final class GameFrame extends JFrame {
         root.add(bottom, BorderLayout.SOUTH);
         primary.addActionListener(event -> advance());
         retire.addActionListener(event -> retire());
+        ultimate.addActionListener(event -> {
+            if (session == null || session.getState() != GameSession.State.FIGHTING) return;
+            int hp = session.getHero().getHP(), enemyHP = session.getEnemy().getHP();
+            session.ultimate().forEach(this::append);
+            arena.animateTurn(Battle.Action.POWER_STRIKE, hp, enemyHP);
+            if (session.getState() == GameSession.State.FINISHED) finish();
+            refresh();
+        });
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent event) { closeGame(); }
         });
@@ -162,17 +178,28 @@ public final class GameFrame extends JFrame {
         info.add(label("挑战者档案", 12, MUTED));
         info.add(Box.createVerticalStrut(10));
         info.add(level);
+        info.add(Box.createVerticalStrut(8));
+        info.add(vocation);
         info.add(Box.createVerticalStrut(10));
         info.add(statRows(new String[]{"生命", "攻击", "防御", "本局胜场"}, stats, 25));
+        info.add(Box.createVerticalStrut(10));
+        info.add(energy);
+        info.add(Box.createVerticalStrut(5));
+        info.add(loot);
         info.add(Box.createVerticalStrut(16));
         info.add(recordTitle);
         info.add(Box.createVerticalStrut(8));
         info.add(statRows(new String[]{"最高连胜", "累计胜场", "挑战局数", "通关次数"}, records, 22));
         info.add(Box.createVerticalGlue());
-        side.add(info, BorderLayout.CENTER);
-        JPanel buttons = panel(new GridLayout(2, 1, 0, 8), BACKGROUND);
-        buttons.setPreferredSize(new Dimension(200, 90));
-        buttons.add(primary); buttons.add(retire);
+        // Let the viewport own the width while preserving the full dossier height.
+        info.setPreferredSize(new Dimension(0, info.getPreferredSize().height));
+        JScrollPane infoScroll = new JScrollPane(info, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        infoScroll.setBorder(BorderFactory.createEmptyBorder());
+        infoScroll.getVerticalScrollBar().setUnitIncrement(20);
+        side.add(infoScroll, BorderLayout.CENTER);
+        JPanel buttons = panel(new GridLayout(3, 1, 0, 8), BACKGROUND);
+        buttons.setPreferredSize(new Dimension(200, 132));
+        buttons.add(ultimate); buttons.add(primary); buttons.add(retire);
         side.add(buttons, BorderLayout.SOUTH);
         return side;
     }
@@ -195,6 +222,7 @@ public final class GameFrame extends JFrame {
 
     private void advance() {
         if (session != null && session.getState() == GameSession.State.RESTING) {
+            if (!session.getRewards().isEmpty()) { chooseReward(); return; }
             session.nextBattle();
             arena.setSession(session);
             append("\n第 " + (session.getWins() + 1) + " 场：" + session.getEnemy().show());
@@ -203,9 +231,11 @@ public final class GameFrame extends JFrame {
         }
         JPanel form = new JPanel(new GridLayout(0, 2, 12, 12));
         form.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        form.setPreferredSize(new Dimension(440, 228));
+        form.setPreferredSize(new Dimension(500, 264));
         JComboBox<String> mode = new JComboBox<>(new String[]{"十关挑战", "无尽试炼"});
-        JComboBox<String> build = new JComboBox<>(new String[]{"均衡 (8 / 10 / 2)", "猛攻 (4 / 16 / 0)", "自定义"});
+        JComboBox<String> build = new JComboBox<>(new String[]{"铁卫 / 生存与防守", "狂刃 / 爆发输出", "灵术师 / 汲取与续航", "自定义 / 铁卫大招"});
+        build.setSelectedIndex(2);
+        JLabel special = new JLabel(HeroCharacter.Style.MYSTIC.ultimate);
         JSpinner health = new JSpinner(new SpinnerNumberModel(8, 0, 20, 1));
         JSpinner power = new JSpinner(new SpinnerNumberModel(10, 0, 20, 1));
         JLabel armor = new JLabel("2");
@@ -214,12 +244,16 @@ public final class GameFrame extends JFrame {
         health.addChangeListener(event -> allocation.run());
         power.addChangeListener(event -> allocation.run());
         build.addActionListener(event -> {
-            boolean custom = build.getSelectedIndex() == 2;
+            boolean custom = build.getSelectedIndex() == 3;
             health.setEnabled(custom); power.setEnabled(custom);
-            if (!custom) { health.setValue(build.getSelectedIndex() == 0 ? 8 : 4); power.setValue(build.getSelectedIndex() == 0 ? 10 : 16); }
+            HeroCharacter.Style style = HeroCharacter.Style.values()[custom ? 0 : build.getSelectedIndex()];
+            special.setText(style.ultimate);
+            special.setToolTipText(style.description);
+            if (!custom) { health.setValue(style.health); power.setValue(style.power); }
         });
         form.add(new JLabel("挑战模式")); form.add(mode);
-        form.add(new JLabel("属性方案 / 共20点")); form.add(build);
+        form.add(new JLabel("职业 / 共20属性点")); form.add(build);
+        form.add(new JLabel("专属大招 / 100能量")); form.add(special);
         form.add(new JLabel("生命点数 / 每点 +10 HP")); form.add(health);
         form.add(new JLabel("攻击点数 / 每点 +2 ATK")); form.add(power);
         form.add(new JLabel("防御 / 剩余点数")); form.add(armor);
@@ -229,7 +263,10 @@ public final class GameFrame extends JFrame {
             int hp = (int) health.getValue();
             int atk = (int) power.getValue();
             if (hp + atk > 20) { message("分配点数不能超过20点。"); continue; }
-            session = new GameSession(HeroCharacter.create(user == null ? "挑战者" : user.getUsername(), hp, atk, 20 - hp - atk), mode.getSelectedIndex() == 0, random);
+            String name = user == null ? "挑战者" : user.getUsername();
+            HeroCharacter hero = build.getSelectedIndex() == 3 ? HeroCharacter.create(name, hp, atk, 20 - hp - atk)
+                    : HeroCharacter.create(name, HeroCharacter.Style.values()[build.getSelectedIndex()]);
+            session = new GameSession(hero, mode.getSelectedIndex() == 0, random, true);
             recorded = false;
             arena.setSession(session);
             log.setText("");
@@ -238,6 +275,20 @@ public final class GameFrame extends JFrame {
             refresh();
             break;
         }
+    }
+
+    private void chooseReward() {
+        JDialog dialog = new JDialog(this, "战后奖励", true);
+        JPanel choices = panel(new GridLayout(3, 1, 0, 12), BACKGROUND);
+        choices.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        for (GameSession.Reward reward : session.getRewards()) {
+            GameButton option = button(reward.title, SURFACE);
+            option.setDetail(reward.description, GREEN);
+            option.addActionListener(event -> { append(session.chooseReward(reward)); dialog.dispose(); refresh(); });
+            choices.add(option);
+        }
+        dialog.setContentPane(choices); dialog.setSize(410, 330); dialog.setResizable(false);
+        dialog.setLocationRelativeTo(this); dialog.setVisible(true);
     }
 
     private void takeTurn(Battle.Action action) {
@@ -283,6 +334,15 @@ public final class GameFrame extends JFrame {
 
     private void refresh() {
         boolean fighting = session != null && session.getState() == GameSession.State.FIGHTING;
+        ultimate.setEnabled(fighting && session.getBattle().getEnergy() == 100);
+        ultimate.setText(session == null ? "职业大招" : session.getHero().getStyle().ultimate);
+        ultimate.setToolTipText(session == null ? "" : session.getHero().getStyle().description);
+        energy.setText("能量 " + (session == null ? 0 : session.getBattle().getEnergy()) + " / 100");
+        vocation.setText("职业 / " + (session == null ? "未选择" : session.getHero().getStyle().title));
+        loot.setText("本局强化 " + (session == null ? 0 : session.getUpgrades().size()));
+        loot.setToolTipText(session == null ? "" : String.join("、", session.getUpgrades()));
+        intention.setText(session == null ? "十关远征 / 击败王座守关者" : fighting ? "敌方意图：" + session.getBattle().getIntent()
+                : session.getState() == GameSession.State.RESTING ? "战后营地 / " + (session.getRewards().isEmpty() ? "准备启程" : "选择一项奖励") : "本次远征已结束");
         for (JButton action : actions) action.setEnabled(fighting);
         if (fighting) {
             HeroCharacter hero = session.getHero();
@@ -299,6 +359,7 @@ public final class GameFrame extends JFrame {
         actions[4].setDetail("恢复 50 HP", RED);
         primary.setEnabled(!fighting);
         primary.setText(fighting ? "战斗进行中" : session != null && session.getState() == GameSession.State.RESTING ? "下一场战斗" : session == null ? "开始挑战" : "再来一局");
+        if (session != null && !session.getRewards().isEmpty() && session.getState() == GameSession.State.RESTING) primary.setText("选择战后奖励");
         primary.setBackground(fighting ? SURFACE : GREEN);
         retire.setEnabled(active());
         login.setEnabled(!active());
@@ -311,7 +372,7 @@ public final class GameFrame extends JFrame {
         } else {
             HeroCharacter hero = session.getHero();
             int encounter = session.getState() == GameSession.State.FIGHTING || session.getEnemy().isAlive() ? session.getWins() + 1 : session.getWins();
-            stage.setText((session.isChallenge() ? "十关挑战" : "无尽试炼") + " / 第 " + encounter + " 场");
+            stage.setText((session.isChallenge() ? "十关挑战" : "无尽试炼") + " / " + session.getRegion() + " / 第 " + encounter + " 场");
             level.setText("Lv. " + String.format("%02d", hero.getLevel()));
             stats[0].setText(hero.getHP() + " / " + hero.getMaxHP());
             stats[1].setText(Integer.toString(hero.getAttack()));

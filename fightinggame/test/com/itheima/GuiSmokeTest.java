@@ -92,14 +92,25 @@ public final class GuiSmokeTest {
             screenshot("impact");
             edt(() -> button(frame, "生命汲取").doClick());
             edt(() -> check(!button(frame, "汲取 (2)").isEnabled(), "drain cooldown reflected in UI"));
+            edt(() -> {
+                button(frame, "防御").doClick(); button(frame, "防御").doClick();
+                check(button(frame, "灵魂潮汐").isEnabled(), "charged ultimate enabled");
+                button(frame, "灵魂潮汐").doClick();
+                check(!button(frame, "灵魂潮汐").isEnabled(), "ultimate consumes energy in UI");
+            });
             for (int i = 0; i < 30; i++) {
                 AtomicReference<Boolean> enabled = new AtomicReference<>();
                 edt(() -> enabled.set(button(frame, "普通攻击").isEnabled()));
                 if (!enabled.get()) break;
                 edt(() -> button(frame, "普通攻击").doClick());
             }
-            edt(() -> check(button(frame, "下一场战斗").isEnabled(), "first battle victory"));
+            edt(() -> check(button(frame, "选择战后奖励").isEnabled(), "first battle victory"));
             screenshot("victory");
+            SwingUtilities.invokeLater(() -> button(frame, "选择战后奖励").doClick());
+            JDialog reward = waitDialog("战后奖励");
+            screenshot("rewards", reward);
+            edt(() -> descendants(reward, JButton.class).get(0).doClick());
+            await(() -> !reward.isShowing(), "camp reward selected");
             edt(() -> { button(frame, "下一场战斗").doClick(); frame.setSize(1000, 760); });
             robot.waitForIdle();
             screenshot("compact");
@@ -121,6 +132,9 @@ public final class GuiSmokeTest {
                         check(label.getPreferredSize().height <= label.getHeight(), "sidebar text fits vertically");
                         check(label.getPreferredSize().width <= label.getWidth(), "sidebar text fits horizontally");
                     }
+                }
+                for (javax.swing.JViewport viewport : descendants(frame, javax.swing.JViewport.class)) {
+                    check(viewport.getView().getWidth() <= viewport.getWidth(), "scrolling panels do not clip horizontally");
                 }
             });
             SwingUtilities.invokeLater(() -> button(frame, "撤退结算").doClick());
