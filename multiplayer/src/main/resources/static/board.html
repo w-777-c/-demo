@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>共享画板 | Iron Arena</title>
+  <link rel="icon" href="icons/pencil.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="board.css">
+  <script src="board.js" defer></script>
+</head>
+<body class="board-page">
+  <header class="topbar">
+    <a class="brand brand-link" href="/"><img src="icons/radio.svg" width="22" height="22" alt=""><span>IRON ARENA <span class="brand-divider">/</span> <span class="brand-section">NETWORK LAB</span></span></a>
+    <nav class="lab-nav" aria-label="项目导航"><a href="/">回声测试</a><a href="board.html" aria-current="page">共享画板</a><a href="duel.html">联机对战</a></nav>
+  </header>
+  <main>
+    <div class="page-heading">
+      <div><p class="eyebrow">02 / SHARED CANVAS</p><h1>共享画板</h1></div>
+      <div class="board-connection"><span id="board-status" class="status" data-state="connecting" role="status"><span class="status-dot"></span><span id="board-status-text">连接中</span></span><button id="board-connect" class="icon-button" type="button" aria-label="断开连接" title="断开连接"><img src="icons/plug.svg" width="18" height="18" alt=""></button></div>
+    </div>
+    <div class="board-heading"><div class="board-name"><span class="board-index">01</span><h2>公共画布</h2></div><span class="online"><img src="icons/users.svg" width="16" height="16" alt=""><span id="online-count">0</span> 人在线</span></div>
+    <div class="board-toolbar" role="group" aria-label="绘画工具">
+      <div class="tool-group modes" role="group" aria-label="模式">
+        <button type="button" class="tool-button" data-tool="pen" aria-label="画笔" title="画笔" aria-pressed="true"><img src="icons/pencil.svg" width="20" height="20" alt=""></button>
+        <button type="button" class="tool-button" data-tool="eraser" aria-label="橡皮" title="橡皮" aria-pressed="false"><img src="icons/eraser.svg" width="20" height="20" alt=""></button>
+      </div>
+      <div class="tool-group colors" role="group" aria-label="画笔颜色">
+        <button type="button" class="swatch" data-color="#25363b" style="--swatch:#25363b" aria-label="墨黑" title="墨黑" aria-pressed="true"></button>
+        <button type="button" class="swatch" data-color="#148579" style="--swatch:#148579" aria-label="松绿" title="松绿" aria-pressed="false"></button>
+        <button type="button" class="swatch" data-color="#367fc0" style="--swatch:#367fc0" aria-label="湖蓝" title="湖蓝" aria-pressed="false"></button>
+        <button type="button" class="swatch" data-color="#e36b55" style="--swatch:#e36b55" aria-label="珊瑚红" title="珊瑚红" aria-pressed="false"></button>
+        <button type="button" class="swatch" data-color="#b381bc" style="--swatch:#b381bc" aria-label="丁香紫" title="丁香紫" aria-pressed="false"></button>
+        <button type="button" class="swatch" data-color="#d8a737" style="--swatch:#d8a737" aria-label="金黄" title="金黄" aria-pressed="false"></button>
+      </div>
+      <div class="tool-group brush-size"><label for="brush-width">粗细</label><input id="brush-width" type="range" min="1" max="32" value="6"><output id="width-value" for="brush-width">6</output><span>px</span></div>
+      <div class="tool-group board-actions"><button type="button" id="download-board" class="tool-button" aria-label="导出 PNG" title="导出 PNG"><img src="icons/download.svg" width="19" height="19" alt=""></button><button type="button" id="clear-board" class="tool-button" aria-label="清空画布" title="清空画布" disabled><img src="icons/trash-2.svg" width="19" height="19" alt=""></button></div>
+    </div>
+    <p id="board-error" class="board-error" role="alert" hidden></p>
+    <div class="canvas-workspace"><canvas id="board" width="1200" height="720" aria-label="公共绘画画布" aria-disabled="true">公共绘画画布</canvas></div>
+    <div class="board-footer"><span id="sync-status" role="status">等待连接</span><span class="canvas-size">1200 × 720</span><span class="capacity"><meter id="board-capacity" min="0" max="100" value="0" aria-label="画布容量"></meter><span id="capacity-label">已用 0%</span></span></div>
+    <footer class="page-footer"><span>IRON ARENA</span><span>SHARED CANVAS / 02</span></footer>
+  </main>
+  <dialog id="clear-dialog" aria-labelledby="clear-title">
+    <form method="dialog"><h2 id="clear-title">清空公共画布？</h2><p>所有人的画面都会清空，此操作无法撤销。</p><div class="dialog-actions"><button class="button button-cancel" value="cancel" autofocus>取消</button><button id="confirm-clear" class="button button-danger" value="clear">清空画布</button></div></form>
+  </dialog>
+</body>
+</html>

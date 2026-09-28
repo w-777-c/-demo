@@ -1,0 +1,13 @@
+{
+  "name": "arena-echo-browser-tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "prepare:icons": "node scripts/prepare-icons.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "lucide-static": "1.48.0"
+  }
+}

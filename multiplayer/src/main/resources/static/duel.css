@@ -1,0 +1,91 @@
+.duel-page main { max-width: 1440px; padding-top: 28px; }
+.duel-page h1 { font-size: 28px; }
+.duel-page .page-heading { margin-bottom: 24px; }
+.duel-connection { display: flex; align-items: center; gap: 10px; }
+.seat-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 15px 0; min-height: 76px; }
+#identity { font-size: 13px; color: var(--muted); min-width: 64px; }
+#join-form { display: flex; align-items: center; gap: 12px; }
+#join-form input { width: 180px; font-family: inherit; }
+#join-form .button { width: auto; }
+.seat-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.seat-actions .button { width: auto; justify-content: center; }
+.duel-error { margin: 14px 0 0; }
+.duel-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 28px; margin-top: 24px; }
+.battle-state { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; min-height: 28px; font-size: 13px; }
+#phase-label { font-weight: 600; overflow-wrap: anywhere; }
+#turn-number { color: var(--muted); white-space: nowrap; font: 12px Consolas, "Microsoft YaHei", monospace; }
+.arena-surface { background: #191f20; color: #edf4ee; }
+.fighters { display: grid; grid-template-columns: minmax(0, 1fr) 50px minmax(0, 1fr); padding: 23px 25px 0; gap: 15px; }
+.fighter { min-width: 0; --fighter-color: #6bccaa; }
+.fighter-coral { --fighter-color: #ef8f79; }
+.fighter-heading { display: flex; align-items: center; gap: 9px; min-height: 24px; }
+.player-number { font: 11px Consolas, monospace; color: var(--fighter-color); }
+.fighter-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.fighter-presence { margin-left: auto; font-size: 10px; color: #a2b3ae; white-space: nowrap; }
+.hp-label { display: flex; gap: 6px; align-items: baseline; margin: 10px 0 7px; color: #b6c6c0; font-size: 10px; }
+.fighter-hp { color: #f0f5f1; font: 18px Consolas, monospace; font-variant-numeric: tabular-nums; }
+.hp-track { height: 7px; background: #35403e; overflow: hidden; }
+.hp-fill { height: 100%; width: 0; background: var(--fighter-color); transition: width 220ms ease-out; }
+.fighter-stats { display: flex; flex-wrap: wrap; gap: 5px 10px; justify-content: space-between; min-height: 20px; padding-top: 8px; font-size: 10px; color: #b0bdb7; }
+.guard-status { color: #e7c373; }
+.versus { align-self: center; text-align: center; color: #c8b679; font: 14px Consolas, monospace; }
+#duel-scene { display: block; width: 100%; height: 285px; }
+.arena-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 24px; color: #9bafa7; font-size: 10px; border-top: 1px solid #303b37; }
+#arena-outcome { color: #d8c890; overflow-wrap: anywhere; text-align: right; }
+.action-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 22px 0 13px; }
+.action-heading h2 { font-size: 14px; white-space: nowrap; }
+#action-status { color: var(--teal); font-size: 12px; text-align: right; }
+.skill-bar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
+.skill-button { min-width: 0; height: 104px; padding: 12px 7px; border: 1px solid #ccd7d4; border-radius: 5px; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #243b36; }
+.skill-button strong { font-size: 12px; }
+.skill-button span { font-size: 10px; color: #64766f; white-space: normal; text-align: center; line-height: 1.4; }
+.skill-button img { opacity: .75; flex-shrink: 0; }
+.skill-button:hover:not(:disabled) { background: #e7f1ed; border-color: #539c84; }
+.skill-button:disabled { background: #f0f3f2; color: #8a9691; border-color: #e0e6e3; }
+.skill-button:disabled img { opacity: .28; }
+.skill-button:disabled span { color: #8a9691; }
+.battle-log { min-width: 0; border-left: 1px solid var(--line); padding-left: 22px; }
+.log-heading { height: 28px; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+.log-heading h2 { font-size: 14px; }
+#log-total { color: var(--muted); font: 11px Consolas, monospace; }
+#duel-log { list-style: none; margin: 0; padding: 0; max-height: 565px; overflow-y: auto; scrollbar-gutter: stable; }
+#duel-log li { padding: 13px 0; border-bottom: 1px solid var(--line); }
+#duel-log time { display: block; margin-bottom: 6px; font: 10px Consolas, "Microsoft YaHei", monospace; color: #7d8e87; }
+#duel-log p { margin: 0; font-size: 12px; color: #50605a; line-height: 1.75; overflow-wrap: anywhere; }
+.battle-log #empty-log { font-size: 12px; color: var(--muted); padding-top: 14px; }
+.duel-page .page-footer { margin-top: 26px; }
+@media (max-width: 1100px) {
+  .duel-layout { grid-template-columns: minmax(0, 1fr) 215px; gap: 20px; }
+  .battle-log { padding-left: 16px; }
+  .fighters { padding: 20px 18px 0; gap: 10px; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); }
+  .fighter-heading { flex-wrap: wrap; gap: 5px; }
+  .fighter-presence { margin-left: 0; }
+}
+@media (max-width: 850px) {
+  .duel-layout { grid-template-columns: 1fr; }
+  .battle-log { padding: 0; border-left: 0; border-top: 1px solid var(--line); padding-top: 20px; }
+  #duel-log { max-height: 230px; }
+}
+@media (max-width: 650px) {
+  .duel-page main { padding-top: 24px; }
+  .duel-page h1 { font-size: 24px; }
+  .seat-bar { gap: 12px; }
+  #join-form { width: 100%; gap: 8px; }
+  #join-form label { display: none; }
+  #join-form input { width: 100%; min-width: 0; }
+  #join-form .button { white-space: nowrap; flex-shrink: 0; }
+  .duel-layout { margin-top: 18px; gap: 24px; }
+  .fighters { padding: 17px 13px 0; grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr); gap: 8px; }
+  .fighter-name { font-size: 13px; max-width: calc(100% - 25px); }
+  .fighter-presence { width: 100%; font-size: 10px; min-height: 14px; }
+  .fighter-hp { font-size: 16px; }
+  .versus { font-size: 11px; }
+  #duel-scene { height: 220px; }
+  .arena-caption { padding: 11px 13px; font-size: 9px; }
+  .skill-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .skill-button { height: 94px; }
+  .battle-state { font-size: 12px; }
+  #turn-number { font-size: 11px; }
+  .action-heading { gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .hp-fill { transition: none; } }

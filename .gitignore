@@ -1,5 +1,10 @@
 .tools/
 build/
+dist/
+multiplayer/target/
+multiplayer/node_modules/
+multiplayer/test-results/
+multiplayer/playwright-report/
 data/
 *.class
 .idea/
