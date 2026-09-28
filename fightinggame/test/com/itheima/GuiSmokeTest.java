@@ -47,6 +47,15 @@ public final class GuiSmokeTest {
             });
             robot.waitForIdle();
             screenshot("home");
+            SwingUtilities.invokeLater(() -> button(frame, "角色图鉴").doClick());
+            JDialog archive = waitDialog("角色图鉴 · CONTRACT ARCHIVE");
+            screenshot("archive", archive);
+            edt(() -> {
+                button(archive, "狂刃").doClick();
+                check(!descendants(archive, javax.swing.JTextArea.class).get(0).getText().isBlank(), "archive story is populated");
+                archive.dispose();
+            });
+            await(() -> !archive.isShowing(), "archive closes");
             SwingUtilities.invokeLater(() -> descendants(frame, JButton.class).stream().filter(b -> "音画设置".equals(b.getAccessibleContext().getAccessibleName())).findFirst().orElseThrow().doClick());
             JDialog settings = waitDialog("音画设置");
             screenshot("settings", settings);

@@ -4,7 +4,7 @@
 
 ![铁境竞技场桌面版](docs/images/arena.png)
 
-桌面界面包含三职业原创赛璐璐风格立绘、剧场舞台、菱形关卡轨道和票券式技能按钮。登录、角色选择、奖励、设置、战绩榜与联机窗口使用统一的剧场主题；字体、图标和音频全部随包提供，可离线使用。
+桌面界面包含三职业原创赛璐璐风格立绘、剧场舞台、菱形关卡轨道和票券式技能按钮。新增“角色图鉴”页面，提供左侧角色卡列表、中间全身立绘、金色徽章和右侧故事 / 技能页签；登录、角色选择、奖励、设置、战绩榜与联机窗口使用统一的剧场主题。字体、图标和音频全部随包提供，可离线使用。
 
 大厅与战斗分别播放原创合成配乐，按钮悬停、点击、出招和胜负有声音反馈。右上角设置可分别调节音乐、音效和动态效果；保存到 `data/presentation.properties`，取消会恢复原值。主窗口最小化时暂停背景音乐，没有可用音频设备时仍可正常游玩。配乐为程序合成音频，角色与舞台由 Java2D 绘制。素材来源和许可见 [资源说明](fightinggame/resources/CREDITS.md)。
 
@@ -120,6 +120,7 @@ fightinggame/src/com/itheima/
   ui/GameArt.java           原创剧场场景与三职业角色绘制
   ui/GameTheme.java         主窗口与弹窗的统一主题
   ui/GameButton.java        技能说明、悬停和键盘焦点状态
+  ui/CharacterArchiveDialog.java  角色卡列表、立绘、故事与技能档案
   ui/GameDialog.java        统一弹窗、标题栏、关闭和 Escape
   ui/GameAudio.java         异步音频设备、场景音乐与交互音效
   ui/SettingsDialog.java    音量、动态效果与设置保存
