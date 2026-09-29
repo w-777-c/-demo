@@ -9,7 +9,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-/** Owned by DuelHandler's lock. Snapshots contain no tokens or mutable game objects. */
+/**
+ * 单个竞技场的服务端权威状态机。
+ *
+ * <p>该对象只由 DuelHandler 的状态锁调用；快照只包含不可变记录，不向客户端泄露
+ * 重连令牌，也不暴露可变的角色对象。所有回合、技能和胜负判断都在服务端完成。</p>
+ */
 final class DuelArena {
     enum Phase { WAITING, FIGHTING, PAUSED, FINISHED }
     static final class RuleViolation extends RuntimeException {
@@ -32,6 +37,7 @@ final class DuelArena {
         int cooldown;
         boolean ready, rematch;
         Player(String name, String connection) { this.name = name; this.connection = connection; reset(); }
+        /** 重置角色属性和本局准备状态，供新局或再战使用。 */
         void reset() { hero = HeroCharacter.create(name, 8, 10, 2); cooldown = 0; ready = rematch = false; }
     }
     private final Clock clock;
@@ -61,6 +67,7 @@ final class DuelArena {
         return players[0].connection == null || players[1].connection == null ? Phase.PAUSED : Phase.FIGHTING;
     }
     Seat join(String connection, String name) {
+        // 入座时校验昵称和容量；已结束的竞技场会创建新的 matchId。
         require(seatOf(connection) < 0, "ALREADY_SEATED");
         require(name != null && name.matches("[\\p{L}\\p{N}_ -]{1,16}") && !name.isBlank(), "BAD_NAME");
         int seat = players[0] == null ? 0 : players[1] == null ? 1 : -1;
@@ -72,6 +79,7 @@ final class DuelArena {
         return new Seat(seat, players[seat].token, "");
     }
     Seat resume(String connection, String token) {
+        // 重连只接受服务端生成的令牌，并替换同一席位的旧连接。
         for (int i = 0; i < 2; i++) {
             Player player = players[i];
             if (player == null || !player.token.equals(token)) continue;
@@ -85,6 +93,7 @@ final class DuelArena {
         throw new RuleViolation("SEAT_EXPIRED");
     }
     void ready(String connection) {
+        // 双方都准备后才进入 FIGHTING，并固定本局先手席位。
         require(phase() == Phase.WAITING, "NOT_WAITING");
         Player player = player(connection);
         require(!player.ready, "ALREADY_READY");
@@ -97,6 +106,7 @@ final class DuelArena {
         revision++;
     }
     void action(String connection, long expectedTurn, Action action) {
+        // 回合号、行动席位和技能可用性全部由服务端校验，客户端参数只作为期望值。
         require(phase() == Phase.FIGHTING, "NOT_FIGHTING");
         int seat = seatOf(connection);
         require(seat >= 0, "NOT_SEATED");
@@ -140,6 +150,7 @@ final class DuelArena {
         revision++;
     }
     void disconnect(String connection) {
+        // 断线保留席位一段宽限时间；对局进入 PAUSED，等待原令牌重连。
         int seat = seatOf(connection);
         if (seat < 0) return;
         Player player = players[seat];
@@ -151,6 +162,7 @@ final class DuelArena {
         revision++;
     }
     void expire() {
+        // 定时清理超过宽限期的断线席位，并按规则结束仍在进行的对局。
         boolean[] expired = new boolean[2];
         for (int i = 0; i < 2; i++) expired[i] = players[i] != null && players[i].connection == null && players[i].deadline <= clock.millis();
         if (!expired[0] && !expired[1]) return;
@@ -161,12 +173,14 @@ final class DuelArena {
     }
     void checkMatch(String expected) { require(matchId.equals(expected), "STALE_MATCH"); }
     private void finish(int winner, String reason) {
+        // 统一记录胜者和结算原因，winner 为 -1 时表示平局。
         finished = true;
         this.winner = winner;
         this.reason = reason;
         add(winner < 0 ? "本局平局。" : players[winner].name + "获胜（" + reason + "）。");
     }
     private void reset(boolean immediatelyStart) {
+        // 创建新的对局标识并重置双方角色、回合、日志和准备状态。
         matchId = UUID.randomUUID().toString();
         started = immediatelyStart;
         finished = false;
@@ -183,6 +197,7 @@ final class DuelArena {
         if (log.size() > 80) log.remove(0);
     }
     Snapshot snapshot() {
+        // 将内部角色对象转换为可序列化的只读视图，并计算每个技能的可用原因。
         List<Fighter> fighters = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             Player p = players[i];

@@ -11,6 +11,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+/** 画板发送器单元测试，重点验证慢客户端不会阻塞发布线程或无限占用内存。 */
 class BoardClientTest {
     @Test void slowClientHasBoundedQueueAndDoesNotBlockThePublisher() throws Exception {
         WebSocketSession session = mock(WebSocketSession.class);

@@ -29,6 +29,7 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
 
+/** 原生联机大厅：创建房间、连接、入席、准备、行动、重连和再战。 */
 @SuppressWarnings("serial")
 public final class OnlineDialog extends GameDialog {
     private final JTextField address = new JTextField("127.0.0.1:8765", 21);

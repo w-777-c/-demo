@@ -11,6 +11,7 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
+/** 从 JAR 资源加载字体和图标，并缓存缩放结果避免重复解码。 */
 public final class UiAssets {
     private static final Map<String, BufferedImage> IMAGES = new HashMap<>();
     private static final Font BODY = loadFont("/fonts/ZCOOLXiaoWei-Regular.ttf");

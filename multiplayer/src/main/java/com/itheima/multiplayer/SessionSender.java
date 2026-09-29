@@ -7,7 +7,12 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-/** One bounded sender per connection keeps socket I/O outside the state lock. */
+/**
+ * 每个连接独立的有界发送队列。
+ *
+ * <p>状态线程只负责入队，网络写入在后台线程执行；队列或字节数超限时主动断开慢客户端，
+ * 让客户端通过快照重新同步，避免内存无限增长。</p>
+ */
 final class SessionSender {
     private final WebSocketSession session;
     private final Runnable onClosed;
@@ -25,6 +30,7 @@ final class SessionSender {
 
     void start() { sender.start(); }
 
+    /** 将消息放入队列；返回路径不执行阻塞式网络 I/O。 */
     void offer(TextMessage message) {
         if (closing != null) return;
         if (queuedBytes.addAndGet(message.getPayloadLength()) > 2 * 1024 * 1024 || !outbound.offer(message)) {
@@ -32,11 +38,13 @@ final class SessionSender {
         }
     }
 
+    /** 幂等地标记关闭原因并唤醒发送线程。 */
     synchronized void stop(CloseStatus status) {
         if (closing == null) closing = status;
         sender.interrupt();
     }
 
+    /** 顺序消费发送队列，并在异常或停止后清理底层连接。 */
     private void sendLoop() {
         try {
             while (closing == null) {

@@ -11,6 +11,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 
+/** 音乐、音效和动态效果设置，取消时恢复打开窗口前的值。 */
 @SuppressWarnings("serial")
 final class SettingsDialog extends GameDialog {
     private final UiSettings settings = UiSettings.current();

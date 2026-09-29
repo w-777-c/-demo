@@ -1,5 +1,6 @@
 package com.itheima.doman;
 
+/** 所有英雄和敌人的基础属性模型，集中维护生命、防御和受击状态的不变量。 */
 public class Character {
     private final String name;
     private int hp;
@@ -29,6 +30,7 @@ public class Character {
     public void defend() { defending = true; }
     public void clearDefense() { defending = false; }
 
+    /** 按生命上限执行治疗，并返回实际恢复量，避免日志与状态不一致。 */
     public int heal(int amount) {
         if (amount < 0) throw new IllegalArgumentException("Negative healing");
         if (!isAlive()) return 0;
@@ -37,6 +39,7 @@ public class Character {
         return actual;
     }
 
+    /** 执行一次受击；防御状态只抵挡下一次命中，并返回实际扣除的生命。 */
     public int takeDamage(int damage) {
         if (damage < 0) throw new IllegalArgumentException("Negative damage");
         if (damage == 0 || !isAlive()) return 0;

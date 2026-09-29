@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
+/** 账号存储层：负责校验、读取、注册和原子保存本地用户战绩。 */
 public final class UserStore {
     private final Path file;
     private final Map<String, User> users = new LinkedHashMap<>();
@@ -81,6 +82,7 @@ public final class UserStore {
         return value;
     }
 
+    /** 先写同目录临时文件，再原子替换目标，降低进程中断导致的损坏风险。 */
     public void save() throws IOException {
         Properties properties = new Properties();
         properties.setProperty("version", "1");

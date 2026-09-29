@@ -16,7 +16,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 
-/** A browsable character archive inspired by collectible character profile cards. */
+/** 可浏览的角色图鉴：左侧角色卡、中间立绘、右侧故事与技能页签。 */
 @SuppressWarnings("serial")
 final class CharacterArchiveDialog extends GameDialog {
     private static final String[] TITLES = {"铁卫", "狂刃", "灵术师", "银幕守卫", "绯刃使", "星辉术士"};

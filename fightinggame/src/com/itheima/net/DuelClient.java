@@ -15,6 +15,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 /** All mutable client state and UI callbacks belong to the Swing event thread. */
+/** 桌面联机客户端：维护 WebSocket、自动重连、恢复凭据和最新权威状态快照。 */
 public final class DuelClient implements AutoCloseable {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
@@ -35,6 +36,7 @@ public final class DuelClient implements AutoCloseable {
         timer = new Timer(1000, event -> tick());
         timer.start(); connect();
     }
+    /** 将用户输入的主机地址规范化为服务端 duel WebSocket 端点。 */
     public static URI endpoint(String address) {
         String value = address.strip();
         if (!value.contains("://")) value = "ws://" + value;
@@ -130,6 +132,7 @@ public final class DuelClient implements AutoCloseable {
             changed.accept(this);
         } catch (Exception invalid) { retry(attempt); }
     }
+    /** 向服务端发送加入、准备、行动、认输等协议命令。 */
     public void command(String type, String value) {
         if (!available()) return;
         ObjectNode command = message(type).put("opId", UUID.randomUUID().toString())

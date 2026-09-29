@@ -17,6 +17,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+/** 应用总入口：负责判断控制台/桌面模式、创建存档目录并持有单实例文件锁。 */
 public class App {
     public static void main(String[] args) {
         boolean console = Arrays.asList(args).contains("--console") || GraphicsEnvironment.isHeadless();

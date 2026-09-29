@@ -7,12 +7,14 @@ import java.util.Base64;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
+/** 使用独立随机盐和 PBKDF2-HMAC-SHA256 保存、校验本地密码摘要。 */
 public final class Passwords {
     private static final int ITERATIONS = 210000;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private Passwords() {}
 
+    /** 生成带版本、迭代次数、盐和摘要字段的可持久化字符串。 */
     public static String hash(String password) {
         byte[] salt = new byte[16];
         RANDOM.nextBytes(salt);
@@ -32,6 +34,7 @@ public final class Passwords {
         }
     }
 
+    /** 解析摘要并使用常量时间比较，避免泄露密码是否匹配。 */
     public static boolean verify(String password, String encoded) {
         if (!isValidHash(encoded)) return false;
         String[] parts = encoded.split("\\$");

@@ -27,12 +27,14 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+/** Swing 端到端冒烟测试：通过 Robot 操作窗口并检查主要交互、持久化和动画截图。 */
 public final class GuiSmokeTest {
     private static GameFrame frame;
     private static Robot robot;
     private static int checks;
 
     public static void main(String[] args) throws Exception {
+        // 使用临时数据目录，避免测试账号和设置污染开发者本地存档。
         Path dir = Files.createTempDirectory("arena-gui-");
         System.setProperty("fightinggame.dataDir", dir.toString());
         Path file = dir.resolve("accounts.properties");

@@ -1,6 +1,8 @@
 package com.itheima.doman;
 
+/** 玩家角色模型，包含职业、等级、药水和局内成长数据。 */
 public class HeroCharacter extends Character {
+    /** 三个可玩的职业预设；数值同时用于创建角色和图鉴展示。 */
     public enum Style {
         VANGUARD("铁卫", "不屈壁垒", "140%攻击，恢复45生命并防御", 9, 6, 5, 3),
         RAIDER("狂刃", "破阵斩", "300%攻击", 4, 16, 0, 2),

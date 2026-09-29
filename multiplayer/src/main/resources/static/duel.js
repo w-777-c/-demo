@@ -1,4 +1,6 @@
 "use strict";
+
+// 联机对战客户端：维护服务端快照、命令幂等标识、重连令牌和战斗操作界面。
 const $ = (id) => document.getElementById(id);
 let state = null, seat = -1, socket = null, connected = false, halted = false;
 let pending = null, counter = 0, retryDelay = 1000, clockOffset = 0;
@@ -21,6 +23,7 @@ function remember(token) {
 }
 function fighter(index) { return state?.fighters.find((player) => player.seat === index); }
 function phaseText() {
+  // 将服务端阶段和断线宽限倒计时转换为用户可读的状态文案。
   if (!state) return "等待连接";
   if (state.phase === "WAITING") return state.fighters.length < 2 ? "等待对手加入" : "等待双方准备";
   if (state.phase === "PAUSED") {
@@ -32,6 +35,7 @@ function phaseText() {
   return `${fighter(state.activeSeat)?.name || "玩家"}的回合`;
 }
 function renderControls() {
+  // 根据席位、阶段、回合和技能可用性统一更新所有按钮的可见性与禁用状态。
   const me = fighter(seat);
   const usable = connected && !pending;
   $("identity").textContent = seat < 0 ? "观战中" : `P${seat + 1} · ${me?.name || "你"}`;
@@ -59,6 +63,7 @@ function renderControls() {
   $("action-status").textContent = !connected ? "等待连接恢复" : pending ? "操作确认中" : seat < 0 ? "观战中" : state?.phase === "FIGHTING" ? (state.activeSeat === seat ? "轮到你行动" : "等待对手行动") : phaseText();
 }
 function renderState(next, force = false) {
+  // 只接受不落后的服务端快照，并把数据同步到血条、日志和 Canvas 场景。
   if (!force && state && next.revision < state.revision) return;
   const previous = state;
   state = next;
@@ -84,6 +89,7 @@ function renderState(next, force = false) {
   document.dispatchEvent(new CustomEvent("duel-state", { detail: { state, previous } }));
 }
 function renderLog(reset) {
+  // 按日志 entry id 增量渲染，避免每个回合重建整段战斗记录。
   const list = $("duel-log");
   const follow = list.scrollHeight - list.scrollTop - list.clientHeight < 48;
   if (reset) list.replaceChildren();
@@ -115,6 +121,7 @@ function send(message) {
   catch { socket.close(); return false; }
 }
 function command(type, extra = {}) {
+  // 为每个命令生成唯一 opId；服务端确认前锁住操作，防止重复点击推进两次回合。
   if (!connected || pending) return;
   error();
   const opId = `${Date.now().toString(36)}_${++counter}`;
@@ -128,6 +135,7 @@ function finishPending(opId) {
   if (pending === opId) { pending = null; clearTimeout(commandTimer); renderControls(); }
 }
 function connect() {
+  // 建立对战 WebSocket，并在断线后保留 resumeToken 进行席位恢复。
   clearTimeout(retryTimer);
   halted = false;
   connected = false;
@@ -181,6 +189,7 @@ $("ready").addEventListener("click", () => command("ready"));
 $("rematch").addEventListener("click", () => command("rematch"));
 for (const button of document.querySelectorAll("[data-action]")) button.addEventListener("click", () => command("action", { action: button.dataset.action, turn: state.turn }));
 function confirm(type) {
+  // 处理认输等需要二次确认的操作，同时校验确认时的 matchId 是否仍然有效。
   confirmType = type;
   confirmMatch = state?.matchId;
   const active = ["FIGHTING", "PAUSED"].includes(state?.phase);

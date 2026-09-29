@@ -1,5 +1,6 @@
 package com.itheima.doman;
 
+/** 本地账号及已结算战绩，不保存未完成的战斗状态。 */
 public final class User {
     private final String username;
     private final String passwordHash;
@@ -27,6 +28,7 @@ public final class User {
     public int getBestWins() { return bestWins; }
     public int getClears() { return clears; }
 
+    /** 将一局结算结果合并到账号统计中。 */
     public void recordGame(int wins, boolean cleared) {
         if (wins < 0 || (cleared && wins != 10)) throw new IllegalArgumentException("Invalid game result");
         games++;

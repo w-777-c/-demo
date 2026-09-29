@@ -8,6 +8,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import javax.swing.JComponent;
 
+/** 绘制十关挑战或无尽模式的菱形进度轨道。 */
 @SuppressWarnings("serial")
 final class ChallengeTrack extends JComponent {
     private GameSession session;

@@ -8,6 +8,7 @@ import java.awt.Graphics2D;
 import java.awt.Font;
 import javax.swing.JPanel;
 
+/** 复用的角色卡绘制组件，支持侧栏头像、创建角色预览和图鉴全身卡。 */
 @SuppressWarnings("serial")
 final class CharacterPreview extends JPanel {
     private int style = 2;

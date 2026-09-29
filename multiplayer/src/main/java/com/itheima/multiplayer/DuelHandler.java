@@ -17,8 +17,15 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+/**
+ * 联机回合对战的 WebSocket 入口。
+ *
+ * <p>连接成员表和 DuelArena 使用同一把锁，所有命令执行完成后广播权威快照；
+ * 通过 opId 记录已处理命令，保证客户端重试不会重复扣血或推进回合。</p>
+ */
 @Component
 public final class DuelHandler extends TextWebSocketHandler {
+    /** 串行化连接生命周期、命令处理和竞技场状态变更。 */
     private final Object lock = new Object();
     private final ObjectMapper json;
     private final DuelArena arena;
@@ -35,7 +42,9 @@ public final class DuelHandler extends TextWebSocketHandler {
         this.arena = new DuelArena(Clock.systemUTC(), graceMillis);
     }
     @Override public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        // 连接先进入发送队列体系，再等待客户端发送 hello 进行身份初始化。
         SessionSender sender = null;
+        // 在锁内完成幂等判断、权威校验和广播，确保并发命令不会交错。
         synchronized (lock) {
             if (!stopped && members.size() < 24) {
                 sender = new SessionSender(session, () -> remove(session.getId()));
@@ -121,6 +130,7 @@ public final class DuelHandler extends TextWebSocketHandler {
     private static void require(boolean condition, String code) { if (!condition) throw new DuelArena.RuleViolation(code); }
     private void ack(Member member, String opId, long revision) { send(member, Map.of("v", 1, "type", "ack", "opId", opId, "revision", revision)); }
     private void welcome(Member member, DuelArena.Seat seat, String error) {
+        // welcome 同时返回当前快照和重连令牌，观战者的席位为 -1。
         send(member, Map.of("v", 1, "type", "welcome", "yourSeat", seat == null ? -1 : seat.seat(),
                 "resumeToken", seat == null ? "" : seat.token(), "resumeError", error, "state", arena.snapshot()));
     }
@@ -131,6 +141,7 @@ public final class DuelHandler extends TextWebSocketHandler {
     private void send(Member member, Object value) { member.sender.offer(encode(value)); }
     private void sendState(Member member) { send(member, Map.of("v", 1, "type", "state", "state", arena.snapshot())); }
     private void broadcast() {
+        // 只向完成 hello 的连接推送统一状态，未初始化连接仍可继续发送 hello。
         TextMessage message = encode(Map.of("v", 1, "type", "state", "state", arena.snapshot()));
         for (Member member : members.values()) if (member.initialized) member.sender.offer(message);
     }
@@ -139,6 +150,7 @@ public final class DuelHandler extends TextWebSocketHandler {
         arena.expire();
         if (before != arena.revision()) broadcast();
     }
+    /** 每 500ms 检查一次断线席位是否超过重连宽限期。 */
     @Scheduled(fixedDelay = 500) public void expireDisconnectedSeats() { synchronized (lock) { if (!stopped) expire(); } }
     private void remove(String id) {
         synchronized (lock) {
@@ -152,6 +164,7 @@ public final class DuelHandler extends TextWebSocketHandler {
     }
     @Override public void afterConnectionClosed(WebSocketSession session, CloseStatus status) { remove(session.getId()); }
     @Override public void handleTransportError(WebSocketSession session, Throwable failure) { remove(session.getId()); }
+    /** 应用关闭时停止发送线程，避免后台线程持有已销毁的 WebSocket。 */
     @PreDestroy public void shutdown() {
         synchronized (lock) {
             stopped = true;

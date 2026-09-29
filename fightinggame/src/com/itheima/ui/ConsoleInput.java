@@ -3,6 +3,7 @@ package com.itheima.ui;
 import java.io.PrintStream;
 import java.util.Scanner;
 
+/** 控制台输入适配器：统一处理行读取、范围校验、重试和输入结束。 */
 public final class ConsoleInput {
     public static final class EndOfInput extends RuntimeException {
         private static final long serialVersionUID = 1L;
@@ -22,6 +23,7 @@ public final class ConsoleInput {
         return scanner.nextLine().trim();
     }
 
+    /** 读取指定范围内的整数，文字、越界和 EOF 都转换为可处理结果。 */
     public int number(String prompt, int min, int max) {
         while (true) {
             String value = read(prompt);

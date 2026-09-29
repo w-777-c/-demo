@@ -1,5 +1,6 @@
 package com.itheima.doman;
 
+/** 带有敌方 AI 技能类型的角色模型。敌人属性由每场遭遇独立创建。 */
 public class EnemyCharacter extends Character {
     public enum Skill { HEAVY_STRIKE, DOUBLE_STRIKE, GUARD, FIREBALL }
 

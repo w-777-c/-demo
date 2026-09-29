@@ -1,14 +1,18 @@
 "use strict";
+
+// 竞技场 Canvas 渲染器：根据 duel-state 事件绘制双方角色、场地和受击动画。
 (() => {
   const canvas = document.getElementById("duel-scene"), g = canvas.getContext("2d");
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
   let sceneState = null, animation = null, width = 1000, height = 285;
+  // 画布使用设备像素比提升清晰度，但逻辑坐标保持与 CSS 尺寸一致。
   new ResizeObserver(() => {
     const rect = canvas.getBoundingClientRect(), ratio = Math.min(devicePixelRatio || 1, 2);
     width = rect.width; height = rect.height;
     canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
     g.setTransform(ratio, 0, 0, ratio, 0, 0);
   }).observe(canvas);
+  // 通过前后快照的 HP 差值触发短暂的攻击/受击反馈。
   document.addEventListener("duel-state", ({ detail: { state, previous } }) => {
     if (previous && previous.matchId === state.matchId && state.revision > previous.revision) {
       const changes = [0, 1].map((seat) => (state.fighters.find((p) => p.seat === seat)?.hp ?? 0) - (previous.fighters.find((p) => p.seat === seat)?.hp ?? 0));
@@ -39,6 +43,7 @@
     }
     g.restore();
   }
+  // 每帧绘制网格、门廊、角色和状态动画；尊重系统的减少动态效果偏好。
   function draw(now) {
     const ground = height - 30;
     rect("#191f20", 0, 0, width, height);

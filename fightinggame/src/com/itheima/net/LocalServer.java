@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 
-/** Owns only the server process started for this desktop lobby. */
+/** 只管理当前桌面联机大厅启动的服务进程，并负责日志、健康检查和关闭。 */
 public final class LocalServer implements AutoCloseable {
     private volatile Process process;
     private boolean closed;

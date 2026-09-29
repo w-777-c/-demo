@@ -6,16 +6,23 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 
-/** Original minor-key waltz, combat variation, and short UI motifs. */
+/**
+ * 离线生成游戏所需的 WAV 音频资源。
+ *
+ * <p>程序用简单的振荡器合成序曲、战斗背景和按钮/技能音效，输出到
+ * fightinggame/resources/audio，便于项目无需外部音频素材即可运行。</p>
+ */
 public final class GenerateAudio {
     private static final int RATE = 22050;
     private static final Path OUTPUT = Path.of("fightinggame/resources/audio");
     public static void main(String[] args) throws Exception {
+        // 创建资源目录后生成背景音乐和短促的交互反馈音效。
         Files.createDirectories(OUTPUT);
         write("overture", score(false)); write("battle", score(true));
         for (String name : new String[]{"hover", "click", "attack", "guard", "heal", "magic", "victory", "defeat", "open"}) write(name, effect(name));
     }
     private static double[] score(boolean battle) {
+        // 以小节、和弦和旋律构造循环曲，battle 参数控制速度与打击乐层。
         double beat = 60.0 / (battle ? 126 : 96);
         int bars = 24;
         double[] wave = new double[(int) (bars * 3 * beat * RATE)];
@@ -39,6 +46,7 @@ public final class GenerateAudio {
         return wave;
     }
     private static double[] effect(String type) {
+        // 不同交互事件使用不同音高序列和音色，避免按钮反馈千篇一律。
         double seconds = type.equals("victory") || type.equals("defeat") ? 1.6 : type.equals("hover") ? 0.07 : type.equals("click") ? 0.13 : 0.65;
         double[] wave = new double[(int) (seconds * RATE)];
         int[] notes = switch (type) {
@@ -51,6 +59,7 @@ public final class GenerateAudio {
         return wave;
     }
     private static void note(double[] wave, double start, double duration, int midi, double volume, int voice) {
+        // 将 MIDI 音符转换为频率，并施加起音/衰减包络，减少爆音。
         int begin = (int) (start * RATE), length = (int) (duration * RATE);
         double frequency = 440 * Math.pow(2, (midi - 69) / 12.0);
         for (int i = 0; i < length && begin + i < wave.length; i++) {
@@ -66,6 +75,7 @@ public final class GenerateAudio {
         }
     }
     private static void write(String name, double[] wave) throws Exception {
+        // 将浮点波形限幅为 16 位 PCM，并记录峰值和 RMS 方便检查响度。
         byte[] pcm = new byte[wave.length * 2]; double peak = 0, power = 0;
         for (int i = 0; i < wave.length; i++) {
             double edge = Math.min(1, Math.min(i, wave.length - 1 - i) / 220.0);

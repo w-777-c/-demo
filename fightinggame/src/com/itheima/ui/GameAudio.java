@@ -9,7 +9,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 
-/** Audio device operations run off the Swing thread; missing devices never block play. */
+/** 音频设备操作全部移出 Swing 线程；没有可用声卡时只禁用声音，不阻塞游戏。 */
 public final class GameAudio {
     private static GameAudio instance;
     private final ExecutorService worker = Executors.newSingleThreadExecutor(task -> {

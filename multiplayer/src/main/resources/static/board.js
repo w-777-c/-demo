@@ -1,5 +1,7 @@
 "use strict";
 
+// 多用户画板客户端：绘制本地笔划，并按服务端序号应用广播和快照。
+
 const byId = (id) => document.getElementById(id);
 const canvas = byId("board");
 const context = canvas.getContext("2d");
@@ -23,6 +25,7 @@ function error(message = "") {
 }
 
 function updateFooter() {
+  // 用线段数和点数中较高的占用率展示服务端容量，帮助用户及时清理画布。
   const usage = Math.min(100, Math.ceil(Math.max(segments / maxSegments, pointCount / maxPoints) * 100));
   byId("board-capacity").value = usage;
   byId("capacity-label").textContent = `已用 ${usage}%`;
@@ -47,6 +50,7 @@ function blank() {
 }
 
 function render(segment) {
+  // 将服务端标准化后的线段绘制到固定逻辑坐标，再由 Canvas 缩放适配视口。
   const points = segment.points;
   context.strokeStyle = context.fillStyle = segment.color;
   context.lineWidth = segment.width;
@@ -64,6 +68,7 @@ function render(segment) {
 }
 
 function send(message) {
+  // 发送前限制浏览器缓冲区和待确认操作数量，慢连接会触发重新同步。
   if (socket?.readyState !== WebSocket.OPEN) return false;
   if (socket.bufferedAmount > 65536 || pending.size >= 128) {
     error("连接繁忙，正在重新同步画布。" );
@@ -83,6 +88,7 @@ function stopStroke() {
 }
 
 function apply(event) {
+  // 严格按 v1 协议处理快照、广播、确认和错误；序号缺口时回到快照流程。
   if (event.v !== 1) throw new Error("Unsupported protocol");
   if (event.type === "snapshot") {
     stopStroke();
@@ -141,6 +147,7 @@ function apply(event) {
 }
 
 function connect() {
+  // 建立画板连接并注册超时、消息解析和自动重连回调。
   clearTimeout(retryTimer);
   ready = false;
   setState("connecting", "连接中");
@@ -194,12 +201,14 @@ function disconnect() {
 }
 
 function position(event) {
+  // 把页面指针坐标换算为服务端约定的 1200×720 画布坐标。
   const rect = canvas.getBoundingClientRect();
   return [Math.round(Math.max(0, Math.min(1200, (event.clientX - rect.left) / rect.width * 1200)) * 10) / 10,
     Math.round(Math.max(0, Math.min(720, (event.clientY - rect.top) / rect.height * 720)) * 10) / 10];
 }
 
 function flushStroke() {
+  // 将当前笔划批量发送，减少拖动过程中的 WebSocket 消息数量。
   if (!active || !active.dirty || !ready) return;
   const opId = String(++counter);
   if (send({ type: "draw", opId, epoch: active.epoch, tool: active.tool, color: active.color, width: active.width, points: active.points })) {

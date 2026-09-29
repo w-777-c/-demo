@@ -14,7 +14,7 @@ import java.awt.geom.QuadCurve2D;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
-/** The combat stage. One clock drives poses, impact effects, damage numbers and health interpolation. */
+/** 战斗舞台：同一时钟驱动角色姿态、粒子特效、伤害数字和血条插值。 */
 @SuppressWarnings("serial")
 public final class ArenaPanel extends JPanel {
     private static final long ACTION_NANOS = 1_100_000_000L;
@@ -60,12 +60,14 @@ public final class ArenaPanel extends JPanel {
         if (heroChange != 0 || enemyChange != 0) startAction(enemyChange > 0 ? Battle.Action.POTION : Battle.Action.ATTACK, false, Battle.Action.ATTACK);
         repaint();
     }
+    /** 开始一次基础行动的五段动画：准备、出招、命中、反击和收势。 */
     public void animateTurn(Battle.Action action, int previousHeroHP, int previousEnemyHP) {
         if (session == null) return;
         heroChange = session.getHero().getHP() - previousHeroHP;
         enemyChange = session.getEnemy().getHP() - previousEnemyHP;
         startAction(action, false, session.getBattle().getLastEnemyAction());
     }
+    /** 开始职业大招动画，使用更长的镜头震动、魔法阵和粒子爆发。 */
     public void animateUltimate(int previousHeroHP, int previousEnemyHP) {
         if (session == null) return;
         heroChange = session.getHero().getHP() - previousHeroHP;
@@ -183,6 +185,7 @@ public final class ArenaPanel extends JPanel {
         }
     }
 
+    /** 按动作类型绘制斩击、汲取曲线、药水、护盾和大招魔法阵。 */
     private void actionEffects(Graphics2D canvas, double p, double response, int heroX, int enemyX, int ground, double height, int heroStyle, int enemyStyle) {
         if (lastAction == null || !UiSettings.current().motion()) return;
         Graphics2D g = (Graphics2D) canvas.create();

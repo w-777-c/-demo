@@ -10,9 +10,11 @@ import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 
+/** UI 资源回归测试：检查图标、立绘、音频文件和不同动作帧确实可用。 */
 public final class UiResourceTests {
     private static int checks;
     public static void main(String[] args) throws Exception {
+        // 资源测试不依赖窗口显示，适合在无图形桌面的构建环境中运行。
         Path temp = Files.createTempDirectory("arena-presentation-");
         System.setProperty("fightinggame.dataDir", temp.toString());
         try {

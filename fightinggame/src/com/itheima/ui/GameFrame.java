@@ -43,6 +43,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
+/** 单机桌面主窗口：组合战斗舞台、角色档案、账号、奖励、音画设置和战绩。 */
 @SuppressWarnings("serial")
 public final class GameFrame extends JFrame {
     public static final Color BACKGROUND = GameTheme.BACKGROUND;

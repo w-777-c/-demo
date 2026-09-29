@@ -16,6 +16,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 
+/** 无系统标题栏的统一弹窗，提供金色边框、拖动标题栏和 Escape 关闭。 */
 @SuppressWarnings({"serial", "this-escape"})
 public class GameDialog extends JDialog {
     private final JPanel shell;

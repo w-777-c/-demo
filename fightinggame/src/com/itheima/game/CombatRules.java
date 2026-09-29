@@ -5,7 +5,7 @@ import com.itheima.doman.HeroCharacter;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Resolves one player's action without scheduling an AI or another player's turn. */
+/** 只结算单个玩家动作，不负责调度敌人或另一名联机玩家的回合。 */
 public final class CombatRules {
     private CombatRules() {}
     public record Result(boolean accepted, int drainCooldown, List<String> messages) {}
@@ -20,6 +20,7 @@ public final class CombatRules {
         return "";
     }
 
+    /** 返回动作是否被接受、更新后的冷却以及供 UI 展示的战斗日志。 */
     public static Result play(HeroCharacter actor, Character target, Battle.Action action, int cooldown) {
         String reason = unavailable(actor, action, cooldown);
         if (!target.isAlive()) reason = "战斗已经结束。";

@@ -13,6 +13,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.Timer;
 
+/** 票券式按钮：统一绘制边框、图标、详情、副标题、焦点和悬停反馈。 */
 @SuppressWarnings("serial")
 final class GameButton extends JButton {
     private String detail, glyph;

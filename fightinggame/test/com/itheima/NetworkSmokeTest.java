@@ -21,12 +21,14 @@ import javax.swing.JLabel;
 import javax.swing.JSpinner;
 import javax.swing.SwingUtilities;
 
+/** Swing 联机界面冒烟测试：验证本地服务、登录、入场、行动和断开流程。 */
 public final class NetworkSmokeTest {
     private static OnlineDialog dialog;
     private static DuelClient second;
     private static int checks;
     private static final AtomicReference<DuelClient> first = new AtomicReference<>();
     public static void main(String[] args) throws Exception {
+        // 测试在临时端口启动本地服务，并通过真实 Swing 事件线程驱动客户端。
         Path temporary = Files.createTempDirectory("arena-network-");
         System.setProperty("fightinggame.dataDir", temporary.toString());
         Path screenshots = Path.of(System.getProperty("arena.testOutput", "build/screenshots")).toAbsolutePath();

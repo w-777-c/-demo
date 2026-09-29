@@ -25,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+/** 画板 WebSocket 集成测试：覆盖广播、快照、并发顺序、幂等和输入边界。 */
 class BoardIntegrationTest {
     @LocalServerPort private int port;
     private final ObjectMapper json = new ObjectMapper();
@@ -32,6 +33,7 @@ class BoardIntegrationTest {
     private URI endpoint() { return URI.create("ws://127.0.0.1:" + port + "/ws/board"); }
 
     @BeforeEach void resetBoard() throws Exception {
+        // 每个用例先清空共享状态，保证序号和 epoch 从可预测状态开始。
         try (Client client = connect()) {
             client.send(Map.of("v", 1, "type", "clear", "opId", "reset", "epoch", client.initial.path("epoch").asLong()));
             client.take("clear");

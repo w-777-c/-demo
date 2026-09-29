@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Properties;
 
+/** 管理可持久化的演示设置：音乐、音效音量和动态效果开关。 */
 public final class UiSettings {
     private static final UiSettings CURRENT = load(Path.of(System.getProperty("fightinggame.dataDir", "data"), "presentation.properties"));
     private final Path file;
@@ -35,6 +36,7 @@ public final class UiSettings {
         }
         return settings;
     }
+    /** 使用同目录临时文件和原子替换保存设置，避免写入中断留下半个文件。 */
     public synchronized void save() throws IOException {
         Path parent = file.toAbsolutePath().getParent(); Files.createDirectories(parent);
         Path temporary = Files.createTempFile(parent, "presentation-", ".tmp");

@@ -10,6 +10,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 
+/** 兼容 JOptionPane 返回值的统一剧场弹窗工厂。 */
 public final class GameDialogs {
     private GameDialogs() {}
     public static int showConfirmDialog(Component parent, Object message, String title, int options, int... ignored) {

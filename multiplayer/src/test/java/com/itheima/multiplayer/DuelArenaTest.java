@@ -9,10 +9,14 @@ import java.time.ZoneId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** 竞技场状态机单元测试：不经过网络，直接验证回合、断线、重赛和结算规则。 */
 class DuelArenaTest {
     private final TestClock clock = new TestClock();
     private DuelArena arena;
-    @BeforeEach void create() { arena = new DuelArena(clock, 30000); }
+    @BeforeEach void create() {
+        // 使用可控时钟，让断线宽限期和超时分支可以确定性复现。
+        arena = new DuelArena(clock, 30000);
+    }
     private void start() { arena.join("a", "青锋"); arena.join("b", "赤刃"); arena.ready("a"); arena.ready("b"); }
     private DuelArena.Fighter fighter(int seat) { return arena.snapshot().fighters().stream().filter(p -> p.seat() == seat).findFirst().orElseThrow(); }
     private void play(String connection, Action action) { arena.action(connection, arena.snapshot().turn(), action); }

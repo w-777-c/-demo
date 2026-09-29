@@ -24,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "arena.duel.reconnect-millis=2000")
+/** 联机对战集成测试：通过真实 WebSocket 客户端验证服务端权威状态和重连协议。 */
 class DuelIntegrationTest {
     @LocalServerPort int port;
     final ObjectMapper json = new ObjectMapper();

@@ -9,6 +9,7 @@ import javax.swing.plaf.FontUIResource;
 import javax.swing.plaf.metal.DefaultMetalTheme;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 
+/** 全局视觉令牌：剧场配色、字体和 Swing Metal 控件默认样式。 */
 final class GameTheme {
     static final Color BACKGROUND = new Color(20, 14, 20);
     static final Color SURFACE = new Color(35, 24, 31);

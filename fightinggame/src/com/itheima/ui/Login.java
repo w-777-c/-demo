@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Random;
 
+/** 控制台登录、注册和离线账号菜单。 */
 public final class Login {
     private final ConsoleInput input;
     private final PrintStream out;

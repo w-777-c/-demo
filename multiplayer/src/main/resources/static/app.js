@@ -1,5 +1,7 @@
 "use strict";
 
+// 回声测试页客户端：管理 WebSocket 连接、消息收发、UTF-8 大小校验和日志展示。
+
 const byId = (id) => document.getElementById(id);
 const endpoint = byId("endpoint");
 const input = byId("message");
@@ -17,12 +19,14 @@ let pending = [];
 endpoint.value = `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws/echo`;
 
 function setError(id, message) {
+  // 统一切换表单错误提示，空文本表示隐藏提示。
   const element = byId(id);
   element.textContent = message;
   element.hidden = !message;
 }
 
 function updateMessageInput() {
+  // 发送前按字节而非字符计数，和服务端的 UTF-8 限制保持一致。
   const bytes = encoder.encode(input.value).length;
   const oversized = bytes > maxBytes;
   byId("byte-count").textContent = `${bytes} / ${maxBytes} 字节`;
@@ -46,6 +50,7 @@ function setState(state) {
 }
 
 function appendMessage(kind, text) {
+  // 将消息作为纯文本节点写入日志，避免把收到的标记当作 HTML 执行。
   const followLatest = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 48;
   const row = document.createElement("li");
   row.className = "message-row";
@@ -74,6 +79,7 @@ function appendMessage(kind, text) {
 }
 
 function disconnect() {
+  // 关闭当前连接并清理计时器、待确认消息和界面状态。
   const previous = socket;
   socket = null;
   clearTimeout(connectionTimer);
@@ -87,6 +93,7 @@ function disconnect() {
 }
 
 byId("connection-form").addEventListener("submit", (event) => {
+  // 同一表单负责建立和断开连接，避免页面刷新才能重新测试。
   event.preventDefault();
   setError("connection-error", "");
   if (socket) {

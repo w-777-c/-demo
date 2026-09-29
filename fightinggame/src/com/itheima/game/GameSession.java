@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Collections;
 
+/** 管理一整局远征的状态机：战斗中、战间休息和已结算。 */
 public final class GameSession {
     public enum State { FIGHTING, RESTING, FINISHED }
     private final HeroCharacter hero;
@@ -66,6 +67,7 @@ public final class GameSession {
         return "获得「" + reward.title + "」：" + reward.description + "。";
     }
 
+    /** 将战斗规则结果接入远征状态机，并在胜负确定时发放成长和奖励。 */
     public List<String> play(Battle.Action action) {
         if (state != State.FIGHTING) return List.of();
         return settle(battle.play(action));
@@ -106,6 +108,7 @@ public final class GameSession {
         return messages;
     }
 
+    /** 只有奖励处理完成后才能创建下一场战斗。 */
     public void nextBattle() {
         if (state != State.RESTING) throw new IllegalStateException("Not resting");
         if (!rewards.isEmpty()) throw new IllegalStateException("Choose a reward first");

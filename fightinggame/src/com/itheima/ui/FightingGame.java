@@ -7,6 +7,7 @@ import com.itheima.game.GameSession;
 import java.io.PrintStream;
 import java.util.Random;
 
+/** 控制台战斗流程，复用桌面版的 GameSession 和 Battle 规则。 */
 public final class FightingGame {
     public record Result(int wins, boolean cleared) {}
 

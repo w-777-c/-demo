@@ -11,7 +11,7 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Original cel-shaded characters and theatrical scenery, independent of display resolution. */
+/** 原创赛璐璐角色和剧场场景绘制器，与显示分辨率无关并缓存角色底图。 */
 final class GameArt {
     private static final Color INK = new Color(35, 25, 39), SKIN = new Color(245, 218, 199), SHADE = new Color(215, 167, 156);
     private static final Map<Integer, BufferedImage> ACTORS = new HashMap<>();
@@ -74,7 +74,7 @@ final class GameArt {
     static void actor(Graphics2D canvas, double x, double ground, double height, int style, boolean flip, boolean alive, double breathe) {
         actor(canvas, x, ground, height, style, flip, alive, breathe, 0, 1);
     }
-    /** Draws a cached illustration with a deterministic pose. action: 0 idle, 1 attack, 2 power, 3 magic, 4 guard, 5 potion, 6 ultimate. */
+    /** 绘制带确定性姿态的角色底图：0待机、1攻击、2强击、3法术、4防御、5药水、6大招。 */
     static void actor(Graphics2D canvas, double x, double ground, double height, int style, boolean flip, boolean alive, double breathe, int action, double phase) {
         Graphics2D g = (Graphics2D) canvas.create(); quality(g);
         g.setColor(new Color(4, 5, 8, 95)); g.fill(new Ellipse2D.Double(x - height * 0.19, ground - 5, height * 0.38, 14));

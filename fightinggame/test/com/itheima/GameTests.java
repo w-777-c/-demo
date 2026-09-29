@@ -22,10 +22,12 @@ import java.nio.file.Path;
 import java.util.Random;
 import java.util.Scanner;
 
+/** 单机核心回归测试：覆盖角色属性、战斗规则、远征流程、账号存储和控制台交互。 */
 public final class GameTests {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
+        // 按模块顺序执行，任一断言失败都会让脚本以非零状态退出。
         characters(); battle(); expeditions(); sessions(); playability(); accounts(); console();
         System.out.println("PASS: " + checks + " assertions");
     }

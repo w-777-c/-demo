@@ -16,6 +16,12 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+/**
+ * 多用户同步画板的 WebSocket 处理器。
+ *
+ * <p>所有画板状态都在 {@link #lock} 保护下修改，操作按服务端接收顺序分配序号，
+ * 客户端可以通过序号和 epoch 检测丢包、乱序以及清空后的旧操作。</p>
+ */
 @Component
 public final class BoardHandler extends TextWebSocketHandler {
     static final int WIDTH = 1200;
@@ -23,6 +29,7 @@ public final class BoardHandler extends TextWebSocketHandler {
     static final int MAX_CLIENTS = 24;
     static final int MAX_SEGMENTS = 2000;
     static final int MAX_POINTS = 20000;
+    /** 保护成员列表、画线数据、序号和清空代次的一把状态锁。 */
     private final Object lock = new Object();
     private final ObjectMapper json;
     private final Map<String, Member> members = new LinkedHashMap<>();
@@ -43,6 +50,7 @@ public final class BoardHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        // 先在状态锁内登记连接并发送快照，再启动发送线程，避免遗漏初始状态。
         SessionSender client = null;
         synchronized (lock) {
             if (members.size() < MAX_CLIENTS) {
@@ -69,7 +77,7 @@ public final class BoardHandler extends TextWebSocketHandler {
         } catch (JsonProcessingException invalidJson) {
             request = null;
         }
-        // Mutation, sequence assignment, snapshots and queue insertion share one order.
+        // 状态变更、序号分配、快照生成和发送队列入队必须共享同一顺序。
         synchronized (lock) {
             Member member = members.get(session.getId());
             if (member == null) return;
@@ -118,6 +126,7 @@ public final class BoardHandler extends TextWebSocketHandler {
     }
 
     private Segment parseSegment(String clientId, String opId, JsonNode request) {
+        // 严格限制工具、颜色、笔宽和坐标范围，防止异常数据污染共享画布。
         String tool = request.path("tool").asText();
         require(tool.equals("pen") || tool.equals("eraser"));
         String color = request.path("color").asText();
@@ -139,6 +148,7 @@ public final class BoardHandler extends TextWebSocketHandler {
     private static void require(boolean valid) { if (!valid) throw new IllegalArgumentException("Invalid board message"); }
 
     private void snapshot(Member member) {
+        // 快照是客户端断线重连、发现序号缺口或清空代次过期时的权威状态。
         send(member, Map.of("v", 1, "type", "snapshot", "seq", seq, "epoch", epoch, "width", WIDTH, "height", HEIGHT,
                 "clientId", member.id, "segments", segments, "maxSegments", MAX_SEGMENTS, "maxPoints", MAX_POINTS));
     }
@@ -151,6 +161,7 @@ public final class BoardHandler extends TextWebSocketHandler {
         catch (JsonProcessingException failure) { throw new IllegalStateException("Cannot encode board event", failure); }
     }
     private void broadcast(Object event) {
+        // 实际网络写入由每个 SessionSender 的独立线程完成，避免阻塞状态锁。
         TextMessage message = encode(event);
         for (Member member : members.values()) member.client.offer(message);
     }
@@ -170,6 +181,7 @@ public final class BoardHandler extends TextWebSocketHandler {
 
     @PreDestroy
     public void shutdown() {
+        // Spring 停止应用时释放所有发送线程和 WebSocket 连接。
         synchronized (lock) {
             for (Member member : members.values()) member.client.stop(CloseStatus.GOING_AWAY);
             members.clear();
