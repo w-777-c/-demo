@@ -8,8 +8,11 @@ import java.awt.RenderingHints;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import javax.imageio.ImageIO;
 
 /** 原创赛璐璐角色和剧场场景绘制器，与显示分辨率无关并缓存角色底图。 */
 final class GameArt {
@@ -70,7 +73,11 @@ final class GameArt {
         g.setColor(new Color(214, 183, 131, 30)); g.setStroke(new BasicStroke(1.5f)); g.drawOval(275, 483, 450, 86); g.drawOval(306, 490, 388, 69);
         g.dispose();
     }
-    static BufferedImage actorImage(int style) { return ACTORS.computeIfAbsent(style, GameArt::renderActor); }
+    /**
+     * 返回角色底图。资源目录中的透明 PNG 优先，缺少资源时继续使用代码绘制的兜底立绘。
+     * 这样生成素材可以逐个替换，开发和测试环境仍然能在没有素材时启动。
+     */
+    static BufferedImage actorImage(int style) { return ACTORS.computeIfAbsent(style, GameArt::loadActor); }
     static void actor(Graphics2D canvas, double x, double ground, double height, int style, boolean flip, boolean alive, double breathe) {
         actor(canvas, x, ground, height, style, flip, alive, breathe, 0, 1);
     }
@@ -95,6 +102,32 @@ final class GameArt {
         g.scale(scale * (1 + idleSway), scale * (1 + breathe * 0.004));
         g.drawImage(actorImage(style), -240, -700, null); g.dispose();
     }
+
+    /** 从 resources/characters 读取生成立绘，并统一为 480x720 的透明画布。 */
+    private static BufferedImage loadActor(int style) {
+        String resource = "/characters/actor-" + Math.max(0, Math.min(5, style)) + ".png";
+        try (InputStream input = GameArt.class.getResourceAsStream(resource)) {
+            if (input != null) {
+                BufferedImage source = ImageIO.read(input);
+                if (source != null) return fitActor(source);
+            }
+        } catch (IOException ignored) {
+            // 单张素材损坏时保留代码绘制兜底，避免整个桌面端无法启动。
+        }
+        return renderActor(style);
+    }
+
+    /** 保持人物比例并贴到统一逻辑尺寸，避免不同生成尺寸改变战斗站位。 */
+    private static BufferedImage fitActor(BufferedImage source) {
+        BufferedImage target = new BufferedImage(480, 720, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = target.createGraphics(); quality(g);
+        double scale = Math.min(480.0 / source.getWidth(), 720.0 / source.getHeight());
+        int width = Math.max(1, (int) Math.round(source.getWidth() * scale));
+        int height = Math.max(1, (int) Math.round(source.getHeight() * scale));
+        g.drawImage(source, (480 - width) / 2, 720 - height, width, height, null); g.dispose();
+        return target;
+    }
+
     private static BufferedImage renderActor(int style) {
         BufferedImage image = new BufferedImage(480, 720, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics(); quality(g); g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
