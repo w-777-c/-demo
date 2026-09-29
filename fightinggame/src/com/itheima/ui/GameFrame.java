@@ -105,12 +105,15 @@ public final class GameFrame extends JFrame {
         leaderboard.addActionListener(event -> showLeaderboard());
         GameButton archive = button("角色图鉴", SURFACE); archive.setGlyph("crown");
         archive.addActionListener(event -> new CharacterArchiveDialog(this).setVisible(true));
+        GameButton library = button("角色库", SURFACE); library.setGlyph("sparkles");
+        library.getAccessibleContext().setAccessibleName("角色库");
+        library.addActionListener(event -> new CharacterLibraryDialog(this).setVisible(true));
         login.addActionListener(event -> accountAction());
         GameButton online = button("联机对战", GREEN); online.setGlyph("users");
         online.addActionListener(event -> { new OnlineDialog(this, user == null ? "挑战者" : user.getUsername()).setVisible(true); refresh(); });
         GameButton settings = button("", SURFACE); settings.setGlyph("settings-2"); settings.setToolTipText("音画设置");
         settings.getAccessibleContext().setAccessibleName("音画设置"); settings.addActionListener(event -> new SettingsDialog(this).setVisible(true));
-        profile.add(online); profile.add(account); profile.add(archive); profile.add(leaderboard); profile.add(login);
+        profile.add(online); profile.add(account); profile.add(library); profile.add(archive); profile.add(leaderboard); profile.add(login);
         profile.add(settings);
         header.add(profile, BorderLayout.EAST);
         header.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GameTheme.BORDER),

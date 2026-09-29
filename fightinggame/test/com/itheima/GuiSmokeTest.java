@@ -58,6 +58,17 @@ public final class GuiSmokeTest {
                 archive.dispose();
             });
             await(() -> !archive.isShowing(), "archive closes");
+            SwingUtilities.invokeLater(() -> button(frame, "角色库").doClick());
+            JDialog library = waitDialog("角色库 · ORIGIN CODEX");
+            edt(() -> {
+                JButton assassin = descendants(library, JButton.class).stream()
+                        .filter(button -> "角色 荆轲·夜宴".equals(button.getAccessibleContext().getAccessibleName()))
+                        .findFirst().orElseThrow();
+                assassin.doClick();
+                check(!descendants(library, javax.swing.JTextArea.class).get(0).getText().isBlank(), "character library story is populated");
+                library.dispose();
+            });
+            await(() -> !library.isShowing(), "character library closes");
             SwingUtilities.invokeLater(() -> descendants(frame, JButton.class).stream().filter(b -> "音画设置".equals(b.getAccessibleContext().getAccessibleName())).findFirst().orElseThrow().doClick());
             JDialog settings = waitDialog("音画设置");
             screenshot("settings", settings);
