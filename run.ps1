@@ -5,7 +5,8 @@ param(
     [switch]$NetworkTest,
     [switch]$BuildOnly,
     [switch]$ReuseServer,
-    [string]$JdkPath
+    [string]$JdkPath,
+    [string]$OutputJarPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -44,8 +45,13 @@ if (Test-Path -LiteralPath $resources) {
 }
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$jarPath = Join-Path $PSScriptRoot 'build\fightinggame.jar'
-$jarStream = [System.IO.File]::Open($jarPath, [System.IO.FileMode]::Create)
+$buildDirectory = Join-Path $PSScriptRoot 'build'
+$defaultJarPath = Join-Path $buildDirectory 'fightinggame.jar'
+$jarPath = if ($OutputJarPath) { [System.IO.Path]::GetFullPath($OutputJarPath) } else { $defaultJarPath }
+$resolvedBuild = [System.IO.Path]::GetFullPath($buildDirectory)
+if (-not $jarPath.StartsWith($resolvedBuild + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Output JAR path must stay inside build.' }
+$temporaryJarPath = Join-Path $buildDirectory ('fightinggame-' + [guid]::NewGuid().ToString('N') + '.tmp')
+$jarStream = [System.IO.File]::Open($temporaryJarPath, [System.IO.FileMode]::Create)
 $archive = New-Object System.IO.Compression.ZipArchive($jarStream, [System.IO.Compression.ZipArchiveMode]::Create)
 try {
     $manifest = $archive.CreateEntry('META-INF/MANIFEST.MF')
@@ -57,6 +63,22 @@ try {
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $classFile.FullName, $entryName) | Out-Null
     }
 } finally { $archive.Dispose(); $jarStream.Dispose() }
+if ($OutputJarPath -or -not (Test-Path -LiteralPath $jarPath)) {
+    [System.IO.File]::Move($temporaryJarPath, $jarPath)
+} else {
+    $backupJarPath = Join-Path $buildDirectory ('fightinggame-' + [guid]::NewGuid().ToString('N') + '.bak')
+    try {
+        [System.IO.File]::Replace($temporaryJarPath, $jarPath, $backupJarPath)
+        if (Test-Path -LiteralPath $backupJarPath) { Remove-Item -LiteralPath $backupJarPath -Force }
+    } catch [System.IO.IOException] {
+        $jarPath = Join-Path $buildDirectory ('fightinggame-' + [guid]::NewGuid().ToString('N') + '.jar')
+        [System.IO.File]::Move($temporaryJarPath, $jarPath)
+        Write-Warning "The default game JAR is in use; built to '$jarPath' instead."
+    } finally {
+        if (Test-Path -LiteralPath $backupJarPath) { Remove-Item -LiteralPath $backupJarPath -Force }
+        if (Test-Path -LiteralPath $temporaryJarPath) { Remove-Item -LiteralPath $temporaryJarPath -Force }
+    }
+}
 
 if ($Test -or $GuiTest -or $NetworkTest) {
     $testClasses = Join-Path $PSScriptRoot 'build\test-classes'
@@ -73,10 +95,10 @@ if ($Test -or $GuiTest -or $NetworkTest) {
     }
     return
 }
-if ($BuildOnly) { Write-Host 'Built build/fightinggame.jar'; return }
+if ($BuildOnly) { Write-Host "Built $jarPath"; return }
 if ($Console) {
-    & (Join-Path $jdkBin 'java.exe') '-Dfile.encoding=UTF-8' -jar 'build\fightinggame.jar' --console
+    & (Join-Path $jdkBin 'java.exe') '-Dfile.encoding=UTF-8' -jar $jarPath --console
     if ($LASTEXITCODE -ne 0) { throw 'Game exited with an error.' }
 } else {
-    Start-Process -FilePath (Join-Path $jdkBin 'javaw.exe') -ArgumentList '-Dfile.encoding=UTF-8', '-jar', 'build\fightinggame.jar' -WorkingDirectory $PSScriptRoot -WindowStyle Hidden
+    Start-Process -FilePath (Join-Path $jdkBin 'javaw.exe') -ArgumentList '-Dfile.encoding=UTF-8', '-jar', $jarPath -WorkingDirectory $PSScriptRoot -WindowStyle Hidden
 }

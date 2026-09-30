@@ -36,19 +36,20 @@ $releaseName = "IronArena-$Version-windows-x64"
 $dist = Join-Path $PSScriptRoot 'dist'
 $application = Join-Path $dist $releaseName
 $zip = "$application.zip"
+$gameJar = Join-Path $PSScriptRoot ('build\portable-game-' + [guid]::NewGuid().ToString('N') + '.jar')
 if ((Test-Path $application) -or (Test-Path $zip)) {
     throw "Release $Version already exists. Choose a new -Version to preserve existing releases and player saves."
 }
 
 Push-Location $PSScriptRoot
 try {
-    & (Join-Path $PSScriptRoot 'run.ps1') -BuildOnly -JdkPath $packagingJdk
+    & (Join-Path $PSScriptRoot 'run.ps1') -BuildOnly -JdkPath $packagingJdk -OutputJarPath $gameJar
     $staging = Join-Path $PSScriptRoot ('build\portable-' + [guid]::NewGuid().ToString('N'))
     $inputDirectory = Join-Path $staging 'input'
     $runtime = Join-Path $staging 'runtime'
     $imageDirectory = Join-Path $staging 'image'
     New-Item -ItemType Directory -Force $inputDirectory, $dist | Out-Null
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'build\fightinggame.jar') -Destination $inputDirectory
+    Copy-Item -LiteralPath $gameJar -Destination (Join-Path $inputDirectory 'fightinggame.jar')
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'build\lib') -Destination $inputDirectory -Recurse
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'build\server') -Destination $inputDirectory -Recurse
 
@@ -83,4 +84,7 @@ try {
     Write-Host "Portable application: $application\IronArena.exe"
     Write-Host "Distribution archive: $zip"
     Write-Host "SHA256: $checksum"
-} finally { Pop-Location }
+} finally {
+    if (Test-Path -LiteralPath $gameJar) { Remove-Item -LiteralPath $gameJar -Force }
+    Pop-Location
+}

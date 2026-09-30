@@ -17,6 +17,26 @@ try {
     foreach ($name in @('jackson-core', 'jackson-annotations', 'jackson-databind')) {
         $entries = @($archive.Entries | Where-Object { $_.FullName -match "^BOOT-INF/lib/$name-[0-9].*\.jar$" })
         if ($entries.Count -ne 1) { throw "Expected one $name dependency in server archive." }
-        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entries[0], (Join-Path $libraryDirectory "$name.jar"), $true)
+        $destination = Join-Path $libraryDirectory "$name.jar"
+        $temporary = Join-Path $libraryDirectory "$name-$([guid]::NewGuid().ToString('N')).tmp"
+        $backup = Join-Path $libraryDirectory "$name-$([guid]::NewGuid().ToString('N')).bak"
+        try {
+            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entries[0], $temporary)
+            $sameContent = (Test-Path -LiteralPath $destination) -and
+                (Get-FileHash -LiteralPath $temporary -Algorithm SHA256).Hash -eq
+                (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+            if ($sameContent) {
+                Remove-Item -LiteralPath $temporary -Force
+            } elseif (Test-Path -LiteralPath $destination) {
+                [System.IO.File]::Replace($temporary, $destination, $backup)
+            } else {
+                [System.IO.File]::Move($temporary, $destination)
+            }
+        } catch [System.IO.IOException] {
+            throw "Cannot update $destination while the running game or server is using it. Close that process and retry. $($_.Exception.Message)"
+        } finally {
+            if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
+            if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
+        }
     }
 } finally { $archive.Dispose() }
