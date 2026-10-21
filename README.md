@@ -45,6 +45,14 @@ IDE 中须将 `build/lib` 下的三个 Jackson JAR 加入桌面模块依赖，�
 
 ## Windows 免安装版
 
+也可以直接双击根目录的 `package-exe.bat` 一键打包；需要指定版本时运行：
+
+```powershell
+.\package-exe.bat 1.2.0
+```
+
+在 VS Code 中执行“运行生成任务”（`Ctrl+Shift+B`），选择“打包 Windows EXE”，按提示输入版本号即可。产物会生成到 `dist/`，包括免安装目录、ZIP 压缩包和 SHA-256 校验文件。
+
 已打包的版本位于 `dist/IronArena-1.2.0-windows-x64.zip`。完整解压后，双击目录中的 `IronArena.exe` 即可运行；玩家无需安装 Java。`app` 和 `runtime` 文件夹必须与 EXE 一起保留。旧版本不会被覆盖。
 
 免安装版将账号和战绩保存在 EXE 旁边的 `data` 文件夹，不依赖启动时的工作目录。移动游戏时可以一起移动存档；更新版本时先关闭游戏，再将旧版 `data` 复制到新目录。请解压到有写入权限的位置。分发包不包含开发目录的账号或战绩。
